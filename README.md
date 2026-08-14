@@ -11,11 +11,11 @@ A local-first, deterministic safety CLI for biohackers to track substances, medi
 **biohack** is a command-line tool designed for biohackers, quantified-self enthusiasts, and anyone who tracks their supplement/medication regimen and health metrics. It provides:
 
 - **Substance & medication logging** — Track what you take, when, how much, and via what route
-- **Vitals logging** — Heart rate, blood pressure, temperature, SpO₂, HRV, weight
+- **Vitals logging** — Heart rate, blood pressure, temperature, SpO2, HRV, weight
 - **Food logging** — Individual food items with amounts and units (MVP)
 - **Deterministic safety protocols** — Built-in rules that check for:
   - **Stimulant-associated tachycardia** (HR > 100 bpm + stimulant in last 4h)
-  - **Hypertensive urgency** (SBP ≥ 180 or DBP ≥ 120)
+  - **Hypertensive urgency** (SBP >= 180 or DBP >= 120)
   - **Serotonin syndrome risk** (multiple serotonergic agents)
 - **Local-first, zero-config storage** — Pure-Rust `sled` embedded database, your data never leaves your machine
 - **Curated substance database** — 27 substances with dose ranges, categories, half-lives, contraindications
@@ -103,32 +103,32 @@ biohack includes three built-in deterministic safety protocols:
 **Trigger:** Heart rate > 100 bpm AND stimulant logged in last 4 hours
 
 **Actions (priority order):**
-1. ��� Alert: "HR {{hr}}bpm with stimulant in last 4h — likely sympathetic overdrive"
-2. ��� Cold face immersion (30s ice water or cold pack) — triggers mammalian dive reflex
-3. ��� 500ml water + electrolytes — addresses relative hypovolemia
-4. ��� Magnesium glycinate 400mg — NMDA modulation, vascular relaxation
-5. ��� L-theanine 200-400mg — alpha-wave promotion, counters caffeine jitters
-6. ��� No further stimulants for 6 hours
+1. [ALERT] "HR {{hr}}bpm with stimulant in last 4h — likely sympathetic overdrive"
+2. [SUGGESTION] Cold face immersion (30s ice water or cold pack) — triggers mammalian dive reflex
+3. [SUGGESTION] 500ml water + electrolytes — addresses relative hypovolemia
+4. [SUGGESTION] Magnesium glycinate 400mg — NMDA modulation, vascular relaxation
+5. [SUGGESTION] L-theanine 200-400mg — alpha-wave promotion, counters caffeine jitters
+6. [CONSTRAINT] No further stimulants for 6 hours
 
 ### 2. Hypertensive Urgency
-**Trigger:** SBP ≥ 180 OR DBP ≥ 120 (without acute end-organ symptoms)
+**Trigger:** SBP >= 180 OR DBP >= 120 (without acute end-organ symptoms)
 
 **Actions:**
-1. ��� Alert: "BP {{sbp}}/{{dbp}} — hypertensive urgency range"
-2. ��� Slow breathing: 6 breaths/min for 5 minutes (baroreflex)
-3. ��� Hydrate: 500ml water over 30 min
-4. ��� Avoid caffeine, nicotine, stimulants, NSAIDs
-5. ��� Recheck BP in 30 minutes
-6. ��� If chest pain, dyspnea, neuro symptoms, vision changes → seek emergency care
+1. [ALERT] "BP {{sbp}}/{{dbp}} — hypertensive urgency range"
+2. [SUGGESTION] Slow breathing: 6 breaths/min for 5 minutes (baroreflex)
+3. [SUGGESTION] Hydrate: 500ml water over 30 min
+4. [SUGGESTION] Avoid caffeine, nicotine, stimulants, NSAIDs
+4. [SUGGESTION] Recheck BP in 30 minutes
+5. [CONSTRAINT] If chest pain, dyspnea, neuro symptoms, vision changes -> seek emergency care
 
 ### 3. Serotonin Syndrome Risk
 **Trigger:** Multiple serotonergic agents logged within 24h
 
 **Actions:**
-1. ��� Alert: "Multiple serotonergic agents detected — serotonin syndrome risk"
-2. ��� Monitor for: clonus, hyperreflexia, hyperthermia, diaphoresis, agitation
-3. ��� Do not add further serotonergic agents
-4. ��� If symptoms develop: seek emergency care, discontinue serotonergic agents
+1. [ALERT] "Multiple serotonergic agents detected — serotonin syndrome risk"
+2. [SUGGESTION] Monitor for: clonus, hyperreflexia, hyperthermia, diaphoresis, agitation
+3. [CONSTRAINT] Do not add further serotonergic agents
+4. [SUGGESTION] If symptoms develop: seek emergency care, discontinue serotonergic agents
 
 ## Substance Database
 

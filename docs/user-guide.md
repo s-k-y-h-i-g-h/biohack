@@ -77,7 +77,7 @@ biohack check
 
 Expected output:
 ```
-���� Safety check: no protocols triggered
+[OK] Safety check: no protocols triggered
 ```
 
 ---
@@ -85,6 +85,7 @@ Expected output:
 ## Core Concepts
 
 ### Substances
+
 Anything you ingest: supplements, medications, nootropics, drugs, herbs, hormones. Each has:
 - **Name** — canonical name (e.g., "L-Theanine")
 - **Dose** — amount with unit (e.g., "400mg", "2.5g", "10ml")
@@ -93,16 +94,18 @@ Anything you ingest: supplements, medications, nootropics, drugs, herbs, hormone
 - **Notes** — free text
 
 ### Vitals
+
 Biometric measurements:
 - **Heart Rate (HR)** — beats per minute
 - **Systolic BP (SBP)** — mmHg
 - **Diastolic BP (DBP)** — mmHg
 - **Temperature** — Celsius
-- **SpO₂** — percentage
+- **SpO2** — percentage
 - **HRV (RMSSD)** — milliseconds
 - **Weight** — kilograms
 
 ### Food (MVP)
+
 Individual food items:
 - **Name** — food name (e.g., "Broccoli", "Salmon")
 - **Amount** — numeric value
@@ -111,9 +114,11 @@ Individual food items:
 - **Notes** — free text
 
 ### Stacks (Planned)
+
 Predefined groups of substances (morning, evening, PRN). Not yet implemented.
 
 ### Safety Protocols
+
 Deterministic rules that evaluate your recent logs and current vitals against known risk patterns. When triggered, they produce:
 - **Alerts** — immediate attention needed
 - **Suggestions** — evidence-based interventions
@@ -124,6 +129,7 @@ Deterministic rules that evaluate your recent logs and current vitals against kn
 ## Daily Workflow
 
 ### Morning
+
 ```bash
 # Log your morning supplements
 biohack log substance --name "Vitamin D3" --dose 2000IU
@@ -134,6 +140,7 @@ biohack log vitals --hr 68 --sbp 122 --dbp 78 --temp 36.7
 ```
 
 ### Throughout the Day
+
 ```bash
 # Log additional substances as you take them
 biohack log substance --name "Caffeine" --dose 200mg --time 2024-01-15T10:30:00Z
@@ -146,6 +153,7 @@ biohack log vitals --hr 95 --sbp 135 --dbp 85
 ```
 
 ### Evening
+
 ```bash
 # Log evening stack
 biohack log substance --name "Magnesium Glycinate" --dose 400mg
@@ -159,6 +167,7 @@ biohack check
 ```
 
 ### Weekly Review
+
 ```bash
 # View last 7 days of substance logs
 biohack show substances --days 7
@@ -195,23 +204,23 @@ biohack -v check
 
 **No protocols triggered:**
 ```
-���� Safety check: no protocols triggered
+[OK] Safety check: no protocols triggered
 ```
 
 **Protocol triggered:**
 ```
-���� Safety check: 1 protocol(s) triggered
+[ALERT] Safety check: 1 protocol(s) triggered
 
 === Stimulant-Associated Tachycardia ===
 Status: TRIGGERED
 Matched: vitals.heart_rate > 100, substance.recent.category contains stimulant
 Actions (priority order):
-  1. [ALERT] HR 110bpm with stimulant in last 4h — likely sympathetic overdrive
+  1. [ALERT] HR 110bpm with stimulant in last 4h -- likely sympathetic overdrive
   2. [SUGGESTION] Cold face immersion (30s ice water or cold pack)
   3. [SUGGESTION] 500ml water + electrolytes
   4. [SUGGESTION] Magnesium glycinate 400mg
-  5. [SUGGESTION] L-theanine 200-400mg
-  6. [CONSTRAINT] No further stimulants for 6 hours
+  4. [SUGGESTION] L-theanine 200-400mg
+  5. [CONSTRAINT] No further stimulants for 6 hours
 ```
 
 ### Protocol Details
@@ -342,6 +351,7 @@ biohack log substance --name "Test" --dose 400
 ### Configuration File (Planned)
 
 Future versions will support `~/.config/biohack/config.toml`:
+
 ```toml
 [database]
 path = "~/.local/share/biohack/biohack.db"

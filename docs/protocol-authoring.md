@@ -48,8 +48,8 @@ trigger:
 | `vitals.heart_rate` | number | Heart rate (bpm) |
 | `vitals.sbp` | number | Systolic BP (mmHg) |
 | `vitals.dbp` | number | Diastolic BP (mmHg) |
-| `vitals.temperature_c` | number | Temperature (°C) |
-| `vitals.spo2` | number | SpO₂ (%) |
+| `vitals.temperature_c` | number | Temperature (C) |
+| `vitals.spo2` | number | SpO2 (%) |
 | `vitals.hrv_rmssd` | number | HRV RMSSD (ms) |
 | `vitals.weight_kg` | number | Weight (kg) |
 | `substance.recent.category` | string | Category of recent substances (within time window) |
@@ -139,9 +139,9 @@ actions:
 **Action Types:**
 | Type | Purpose | Display |
 |------|---------|---------|
-| `alert` | Urgent risk notification | ��� Red, bold |
-| `suggestion` | Evidence-based intervention | ��� Yellow |
-| `constraint` | What to avoid | ��� Blue |
+| `alert` | Urgent risk notification | [ALERT] Red, bold |
+| `suggestion` | Evidence-based intervention | [SUGGESTION] Yellow |
+| `constraint` | What to avoid | [CONSTRAINT] Blue |
 
 **Message Templates:**
 Use `{{placeholder}}` for dynamic values from matched conditions:
@@ -149,7 +149,7 @@ Use `{{placeholder}}` for dynamic values from matched conditions:
 - `{{sbp}}` — systolic BP
 - `{{dbp}}` — diastolic BP
 - `{{temp}}` — temperature
-- `{{spo2}}` — SpO₂
+- `{{spo2}}` — SpO2
 - `{{substance}}` — matched substance name
 - `{{category}}` — matched category
 
@@ -175,16 +175,16 @@ trigger:
 actions:
   - type: "alert"
     priority: 1
-    message: "HR {{hr}}bpm with stimulant in last 4h — likely sympathetic overdrive"
+    message: "HR {{hr}}bpm with stimulant in last 4h -- likely sympathetic overdrive"
     rationale: "Stimulants increase sympathetic tone; tachycardia may indicate overdrive"
   - type: "suggestion"
     priority: 1
     message: "Cold face immersion (30s ice water or cold pack)"
-    rationale: "Triggers mammalian dive reflex → vagal activation → HR reduction"
+    rationale: "Triggers mammalian dive reflex -> vagal activation -> HR reduction"
   - type: "suggestion"
     priority: 2
     message: "500ml water + electrolytes"
-    rationale: "Stimulants + vasoconstriction → relative hypovolemia"
+    rationale: "Stimulants + vasoconstriction -> relative hypovolemia"
   - type: "suggestion"
     priority: 3
     message: "Magnesium glycinate 400mg"
@@ -222,7 +222,7 @@ trigger:
 actions:
   - type: "alert"
     priority: 1
-    message: "BP {{sbp}}/{{dbp}} — hypertensive urgency range"
+    message: "BP {{sbp}}/{{dbp}} -- hypertensive urgency range"
     rationale: "SBP >= 180 or DBP >= 120 requires prompt reduction"
   - type: "suggestion"
     priority: 1
@@ -242,7 +242,7 @@ actions:
     rationale: "Monitor trend; seek care if not improving"
   - type: "constraint"
     priority: 5
-    message: "If chest pain, dyspnea, neuro symptoms, vision changes → seek emergency care"
+    message: "If chest pain, dyspnea, neuro symptoms, vision changes -> seek emergency care"
     rationale: "Signs of hypertensive emergency (end-organ damage)"
 evidence:
   - "ACC/AHA Hypertension Guidelines 2017"
@@ -266,7 +266,7 @@ trigger:
 actions:
   - type: "alert"
     priority: 1
-    message: "Multiple serotonergic agents detected — serotonin syndrome risk"
+    message: "Multiple serotonergic agents detected -- serotonin syndrome risk"
     rationale: "Combining MAOIs, SSRIs, SNRIs, tryptophan, 5-HTP, MDMA, tramadol increases risk"
   - type: "suggestion"
     priority: 1
@@ -356,7 +356,7 @@ biohack protocol test
 - [ ] External YAML protocol loading (no rebuild needed)
 - [ ] Protocol migration tool (`biohack protocol migrate`)
 - [ ] Protocol authoring wizard (`biohack protocol create`)
-- [ ] Count-based substance conditions (e.g., "≥2 serotonergic agents")
+- [ ] Count-based substance conditions (e.g., ">=2 serotonergic agents")
 - [ ] Time-series conditions (e.g., "HR trending up over 6h")
 - [ ] Protocol sharing via GitHub Gists/registry
 
