@@ -95,14 +95,14 @@ quality_gates:
 - **Acceptance**: `biohack show vitals --days 7` displays entries in a formatted table
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-004]
-- **Status**: ��� NOT STARTED (stub only)
+- **Status**: ���� �� COMPLETED
 
 ### REQ-013: View Recent Logs — Timeline
 - **Description**: Show combined timeline of all log types (substances, vitals, food) sorted chronologically
 - **Acceptance**: `biohack show timeline --days 3` displays merged entries in a formatted table
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-003, REQ-004, REQ-010]
-- **Status**: ��� NOT STARTED (stub only)
+- **Status**: COMPLETED
 
 ### REQ-014: Tests & CI
 - **Description**: Unit tests for protocol engine, substance lookups, dose parsing; integration tests for CLI; GitHub Actions CI

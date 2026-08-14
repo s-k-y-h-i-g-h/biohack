@@ -47,24 +47,24 @@
 - [x] Manual check: `biohack show substances --days 7` shows formatted table
 
 ## Phase 5: View Recent Logs — Vitals (v1.0)
-- [ ] Task 14: Implement database query for recent vitals logs
-- [ ] Task 15: Implement `biohack show vitals --days N` command with formatted table output
-- [ ] Task 16: Add unit tests for vitals log queries
+- [x] Task 14: Implement database query for recent vitals logs
+- [x] Task 15: Implement `biohack show vitals --days N` command with formatted table output
+- [x] Task 16: Add unit tests for vitals log queries
 
-**Checkpoint: View Vitals** ����������� ���������
-- [ ] Tests pass: `cargo test`
-- [ ] Build succeeds: `cargo build`
-- [ ] Manual check: `biohack show vitals --days 7` shows formatted table
+**Checkpoint: View Vitals** ������������� ����������� ����������� ���������
+- [x] Tests pass: `cargo test`
+- [x] Build succeeds: `cargo build`
+- [x] Manual check: `biohack show vitals --days 7` shows formatted table
 
 ## Phase 6: View Recent Logs — Timeline (v1.0)
-- [ ] Task 17: Implement combined timeline query merging substances, vitals, food logs
-- [ ] Task 18: Implement `biohack show timeline --days N` command with formatted table output
-- [ ] Task 19: Add unit tests for timeline queries
+- [x] Task 17: Implement combined timeline query merging substances, vitals, food logs
+- [x] Task 18: Implement `biohack show timeline --days N` command with formatted table output
+- [x] Task 19: Add unit tests for timeline queries
 
-**Checkpoint: View Timeline** ����������� ���������
-- [ ] Tests pass: `cargo test`
-- [ ] Build succeeds: `cargo build`
-- [ ] Manual check: `biohack show timeline --days 7` shows combined chronological table
+**Checkpoint: View Timeline** ��������������� ������������� ������������� ����������� ������������� ����������� ����������� ���������
+- [x] Tests pass: `cargo test`
+- [x] Build succeeds: `cargo build`
+- [x] Manual check: `biohack show timeline --days 7` shows combined chronological table
 
 ## Phase 7: Stack Management (v1.0)
 - [ ] Task 20: Implement stack YAML schema and data model
