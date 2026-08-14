@@ -29,7 +29,7 @@ quality_gates:
 
 ### REQ-003: Logging — Substances
 - **Description**: Log substance intake with name, dose, time, route, notes
-- **Acceptance**: `biohack log substance --name "L-Theanine" --dose 400mg` creates entry; `biohack log list --days 3` shows it
+- **Acceptance**: `biohack log substance --name "L-Theanine" --dose 400mg` creates entry; `biohack show substances --days 3` shows it
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-002]
 - **Status**: �� COMPLETED (console output; DB persistence in v1.1)
@@ -46,14 +46,14 @@ quality_gates:
 - **Acceptance**: `biohack check` runs protocols; tachycardia protocol fires when HR>100 + stimulant in 4h
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-003, REQ-004]
-- **Status**: ���� COMPLETED
+- **Status**: �� COMPLETED
 
 ### REQ-006: Protocol Definitions (Seed)
 - **Description**: Encode 3 critical protocols: stimulant tachycardia, hypertension urgency, serotonin syndrome risk
 - **Acceptance**: Protocol YAMLs load; `biohack protocol test` simulates triggers and shows actions
 - **Priority**: high
 - **Dependencies**: [REQ-005]
-- **Status**: ���� COMPLETED (built-in protocols in Rust)
+- **Status**: �� COMPLETED (built-in protocols in Rust)
 
 ### REQ-007: Stack Management
 - **Description**: Define daily stacks (morning/evening/prn) in YAML; log with `biohack log stack morning`
@@ -83,42 +83,63 @@ quality_gates:
 - **Dependencies**: [REQ-001]
 - **Status**: �� COMPLETED (MVP stub - console only; food DB in v1.1)
 
-### REQ-011: Tests & CI
+### REQ-011: View Recent Logs — Substances
+- **Description**: Show recent substance logs with filtering by name and time range
+- **Acceptance**: `biohack show substances --days 3 --name caffeine` displays matching entries in a formatted table
+- **Priority**: high
+- **Dependencies**: [REQ-001, REQ-003]
+- **Status**: ��� NOT STARTED (stub only)
+
+### REQ-012: View Recent Logs — Vitals
+- **Description**: Show recent vitals logs with time range filtering
+- **Acceptance**: `biohack show vitals --days 7` displays entries in a formatted table
+- **Priority**: high
+- **Dependencies**: [REQ-001, REQ-004]
+- **Status**: ��� NOT STARTED (stub only)
+
+### REQ-013: View Recent Logs — Timeline
+- **Description**: Show combined timeline of all log types (substances, vitals, food) sorted chronologically
+- **Acceptance**: `biohack show timeline --days 3` displays merged entries in a formatted table
+- **Priority**: high
+- **Dependencies**: [REQ-001, REQ-003, REQ-004, REQ-010]
+- **Status**: ��� NOT STARTED (stub only)
+
+### REQ-014: Tests & CI
 - **Description**: Unit tests for protocol engine, substance lookups, dose parsing; integration tests for CLI; GitHub Actions CI
 - **Acceptance**: `cargo test` passes; CI runs on push; releases publish binaries
 - **Priority**: high
 - **Dependencies**: [REQ-001]
-- **Status**: ������� PARTIAL (8 protocol engine unit tests passing; CLI integration tests needed)
+- **Status**: ��� PARTIAL (8 protocol engine unit tests passing; CLI integration tests needed)
 
-### REQ-016: CLI Integration Tests
+### REQ-015: CLI Integration Tests
 - **Description**: End-to-end CLI integration tests covering all commands, edge cases, and error scenarios
 - **Acceptance**: `cargo test` includes integration tests for all CLI commands; edge cases tested (invalid doses, missing args, etc.)
 - **Priority**: high
-- **Dependencies**: [REQ-011]
-- **Status**: ������� NOT STARTED
+- **Dependencies**: [REQ-014]
+- **Status**: ��� NOT STARTED
 
-### REQ-012: Documentation & GitHub
+### REQ-016: Documentation & GitHub
 - **Description**: README.md with installation, usage examples, command reference; push to GitHub with proper repo setup
 - **Acceptance**: README.md exists with usage examples; repo at https://github.com/s-k-y-h-i-g-h/biohack has commits and CI
 - **Priority**: high
 - **Dependencies**: [REQ-001]
-- **Status**: ����� NOT STARTED
+- **Status**: �� COMPLETED
 
-### REQ-015: User Documentation
+### REQ-017: User Documentation
 - **Description**: Comprehensive user documentation including installation guide, command reference with examples, configuration guide, protocol authoring guide, and troubleshooting
 - **Acceptance**: docs/ directory with user-guide.md, command-reference.md, protocol-authoring.md, configuration.md, troubleshooting.md; all linked from README.md
 - **Priority**: high
-- **Dependencies**: [REQ-001, REQ-012]
-- **Status**: ����� NOT STARTED
+- **Dependencies**: [REQ-001, REQ-016]
+- **Status**: �� COMPLETED
 
-### REQ-013: Food Database (v1.1)
+### REQ-018: Food Database (v1.1)
 - **Description**: Integrate USDA FoodData Central for nutrient lookup; track macro/micronutrients
 - **Acceptance**: `biohack log food --name "Salmon" --amount 150 --unit g` shows protein, omega-3, etc.
 - **Priority**: medium
 - **Dependencies**: [REQ-010]
 - **Status**: ��� PLANNED v1.1
 
-### REQ-014: Protocol YAML Versioning & Migration
+### REQ-019: Protocol YAML Versioning & Migration
 - **Description**: Versioned protocol YAMLs with migration support for safe updates
 - **Acceptance**: `biohack protocol migrate` upgrades protocol files safely
 - **Priority**: medium

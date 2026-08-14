@@ -7,8 +7,8 @@
 - [x] Task 4: Create substance seeder to load data/seeds/substances.yaml on first run
 - [x] Task 5: Implement basic CLI command parsing for substance/log and substance/seed commands
 
-**Checkpoint: Foundation** ���
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-011)
+**Checkpoint: Foundation** ���������
+- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
 - [x] Build succeeds: `cargo build`
 - [x] Manual check: `biohack seed` loads substances successfully, `biohack substance list` shows them
 
@@ -19,8 +19,8 @@
 - [x] Task 9: Create console output formatting for logged entries (timestamp, substance/vitals/food details)
 - [x] Task 10: Implement `biohack log list --days 3` to show recent entries across types
 
-**Checkpoint: Core Logging** ���
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-011)
+**Checkpoint: Core Logging** ���������
+- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
 - [x] Build succeeds: `cargo build`
 - [x] Manual check: Can log substance, vitals, and food; commands work
 
@@ -31,71 +31,101 @@
 - [x] Task 14: Create `biohack check` command to run protocols and display alerts/suggestions
 - [x] Task 15: Add protocol testing capability (`biohack protocol test --id stimulant_tachycardia`)
 
-**Checkpoint: Core Features** ���
+**Checkpoint: Core Features** �����������
 - [x] Tests pass: `cargo test`
 - [x] Build succeeds: `cargo build`
 - [x] Manual check: `biohack check` triggers protocols appropriately with test data
 
-## Phase 4: Polish & Documentation (v1.0)
-- [ ] Task 26: Create README.md with installation, usage examples, command reference
-- [ ] Task 27: Add help text and examples for all commands
-- [ ] Task 28: Proper error handling and user-friendly error messages
-- [ ] Task 29: Push to GitHub (https://github.com/s-k-y-h-i-g-h/biohack)
-- [ ] Task 30: Set up GitHub Actions CI
+## Phase 4: View Recent Logs — Substances (v1.0)
+- [ ] Task 11: Implement database query for recent substance logs with filtering
+- [ ] Task 12: Implement `biohack show substances --days N --name NAME` command with formatted table output
+- [ ] Task 13: Add unit tests for substance log queries
 
-**Checkpoint: Documentation Complete** �����������
+**Checkpoint: View Substances** ���������
+- [ ] Tests pass: `cargo test`
+- [ ] Build succeeds: `cargo build`
+- [ ] Manual check: `biohack show substances --days 7` shows formatted table
 
-## Phase 5: User Documentation (v1.0)
-- [ ] Task 31: Create docs/user-guide.md (installation, quick start, workflow)
-- [ ] Task 32: Create docs/command-reference.md (all commands with examples)
-- [ ] Task 33: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
-- [ ] Task 34: Create docs/configuration.md (database path, config file, env vars)
-- [ ] Task 35: Create docs/troubleshooting.md (common issues, FAQ)
-- [ ] Task 36: Link all docs from README.md
+## Phase 5: View Recent Logs — Vitals (v1.0)
+- [ ] Task 14: Implement database query for recent vitals logs
+- [ ] Task 15: Implement `biohack show vitals --days N` command with formatted table output
+- [ ] Task 16: Add unit tests for vitals log queries
 
-**Checkpoint: User Documentation** �����������
+**Checkpoint: View Vitals** ���������
+- [ ] Tests pass: `cargo test`
+- [ ] Build succeeds: `cargo build`
+- [ ] Manual check: `biohack show vitals --days 7` shows formatted table
 
-## Phase 6: CLI Integration Tests (v1.0)
-- [ ] Task 37: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
-- [ ] Task 38: Integration tests for `biohack log vitals` (all vitals combos, validation)
-- [ ] Task 39: Integration tests for `biohack log food` (units, amounts, edge cases)
-- [ ] Task 40: Integration tests for `biohack substance seed/list/show/search`
-- [ ] Task 41: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
-- [ ] Task 42: Integration tests for error handling (missing args, invalid inputs, DB errors)
-- [ ] Task 43: Add tests to CI pipeline
+## Phase 6: View Recent Logs — Timeline (v1.0)
+- [ ] Task 17: Implement combined timeline query merging substances, vitals, food logs
+- [ ] Task 18: Implement `biohack show timeline --days N` command with formatted table output
+- [ ] Task 19: Add unit tests for timeline queries
 
-**Checkpoint: CLI Integration Tests** �����������
+**Checkpoint: View Timeline** ���������
+- [ ] Tests pass: `cargo test`
+- [ ] Build succeeds: `cargo build`
+- [ ] Manual check: `biohack show timeline --days 7` shows combined chronological table
 
 ## Phase 7: Stack Management (v1.0)
-- [ ] Task 16: Implement stack YAML schema and data model
-- [ ] Task 17: Create `biohack stack create/list/show` commands
-- [ ] Task 18: Implement `biohack log stack <name>` to log multiple substances at once
-- [ ] Task 19: Add stack scheduling (morning/evening/prn)
+- [ ] Task 20: Implement stack YAML schema and data model
+- [ ] Task 21: Create `biohack stack create/list/show` commands
+- [ ] Task 22: Implement `biohack log stack <name>` to log multiple substances at once
+- [ ] Task 23: Add stack scheduling (morning/evening/prn)
 
-**Checkpoint: Stack Management** �����������
+**Checkpoint: Stack Management** ���������
 
 ## Phase 8: Reporting & Export (v1.0)
-- [ ] Task 20: Implement markdown report generation
-- [ ] Task 21: Implement CSV export
-- [ ] Task 22: Add `biohack report --days N --format markdown|csv` command
-- [ ] Task 23: Clinician-ready formatting (structured sections)
+- [ ] Task 24: Implement markdown report generation
+- [ ] Task 25: Implement CSV export
+- [ ] Task 26: Add `biohack report --days N --format markdown|csv` command
+- [ ] Task 27: Clinician-ready formatting (structured sections)
 
-**Checkpoint: Reporting** �����������
+**Checkpoint: Reporting** ���������
 
-## Phase 9: Protocol Engine & Testing (v1.0)
-- [ ] Task 22: Write unit tests for protocol engine, substance lookups, dose parsing
-- [ ] Task 23: Write integration tests for CLI commands
-- [ ] Task 24: Set up GitHub Actions CI
-- [ ] Task 25: Property-based tests for protocol evaluation
+## Phase 9: Polish & Documentation (v1.0)
+- [ ] Task 28: Create README.md with installation, usage examples, command reference
+- [ ] Task 29: Add help text and examples for all commands
+- [ ] Task 30: Proper error handling and user-friendly error messages
+- [ ] Task 31: Push to GitHub (https://github.com/s-k-y-h-i-g-h/biohack)
+- [ ] Task 32: Set up GitHub Actions CI
 
-**Checkpoint: Tests & CI** �����������
+**Checkpoint: Documentation Complete** ���������������
 
-## Phase 10: v1.1 Features (Planned)
-- [ ] Task 44: Food database integration (USDA FoodData Central)
-- [ ] Task 45: Nutrient tracking (macros, micros, deficiencies/excesses)
-- [ ] Task 46: Protocol YAML versioning and migration system
-- [ ] Task 47: Health platform import (Google Health, Samsung Health)
-- [ ] Task 48: Predefined meal logging
-- [ ] Task 49: TUI support via ratatui
+## Phase 10: User Documentation (v1.0)
+- [ ] Task 33: Create docs/user-guide.md (installation, quick start, workflow)
+- [ ] Task 34: Create docs/command-reference.md (all commands with examples)
+- [ ] Task 35: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
+- [ ] Task 36: Create docs/configuration.md (database path, config file, env vars)
+- [ ] Task 37: Create docs/troubleshooting.md (common issues, FAQ)
+- [ ] Task 38: Link all docs from README.md
 
-**Checkpoint: v1.1 Complete** �����������
+**Checkpoint: User Documentation** ���������������
+
+## Phase 11: CLI Integration Tests (v1.0)
+- [ ] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
+- [ ] Task 40: Integration tests for `biohack log vitals` (all vitals combos, validation)
+- [ ] Task 41: Integration tests for `biohack log food` (units, amounts, edge cases)
+- [ ] Task 42: Integration tests for `biohack substance seed/list/show/search`
+- [ ] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
+- [ ] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
+- [ ] Task 45: Add tests to CI pipeline
+
+**Checkpoint: CLI Integration Tests** ���������������
+
+## Phase 12: Protocol Engine & Testing (v1.0)
+- [ ] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
+- [ ] Task 47: Write integration tests for CLI commands
+- [ ] Task 48: Set up GitHub Actions CI
+- [ ] Task 49: Property-based tests for protocol evaluation
+
+**Checkpoint: Tests & CI** ���������������
+
+## Phase 13: v1.1 Features (Planned)
+- [ ] Task 50: Food database integration (USDA FoodData Central)
+- [ ] Task 51: Nutrient tracking (macros, micros, deficiencies/excesses)
+- [ ] Task 52: Protocol YAML versioning and migration system
+- [ ] Task 53: Health platform import (Google Health, Samsung Health)
+- [ ] Task 54: Predefined meal logging
+- [ ] Task 55: TUI support via ratatui
+
+**Checkpoint: v1.1 Complete** ���������������
