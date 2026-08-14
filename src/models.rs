@@ -77,6 +77,7 @@ pub struct Substance {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubstanceLog {
     pub id: Uuid,
+    #[serde(default = "uuid::Uuid::nil")]
     pub substance_id: Uuid,
     pub substance_name: String,
     pub dose_mg: f64,
@@ -102,11 +103,44 @@ pub struct VitalsLog {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Schedule {
+    #[serde(rename = "morning")]
+    Morning,
+    #[serde(rename = "evening")]
+    Evening,
+    #[serde(rename = "prn")]
+    Prn,
+}
+
+impl std::fmt::Display for Schedule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Morning => write!(f, "morning"),
+            Self::Evening => write!(f, "evening"),
+            Self::Prn => write!(f, "prn"),
+        }
+    }
+}
+
+impl std::str::FromStr for Schedule {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "morning" => Self::Morning,
+            "evening" => Self::Evening,
+            "prn" => Self::Prn,
+            other => anyhow::bail!("Invalid schedule: {}. Use 'morning', 'evening', or 'prn'", other),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StackItem {
     pub substance_name: String,
     pub dose: String,
     pub route: Option<String>,
-    pub time_of_day: Option<String>,
+    pub schedule: Option<Schedule>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

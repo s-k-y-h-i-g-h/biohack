@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::cli::*;
 use crate::db::Database;
-use crate::models::{Substance, SubstanceLog, VitalsLog, FoodLog};
+use crate::models::{FoodLog, Schedule, Stack, StackItem, Substance, SubstanceLog, VitalsLog};
 
 /// Initialize the database
 pub fn handle_init(db: &Database) -> Result<()> {
@@ -144,12 +144,6 @@ pub fn handle_log_vitals(db: &Database, args: &LogCommands, _no_color: bool) -> 
             println!("  Notes: {}", n);
         }
     }
-    Ok(())
-}
-
-/// Placeholder for other commands - mark as not implemented
-pub fn handle_log_stack(_db: &Database, _args: &LogCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: log stack".yellow());
     Ok(())
 }
 
@@ -346,28 +340,184 @@ pub fn handle_substance_show(_db: &Database, _args: &SubstanceCommands, _no_colo
     Ok(())
 }
 
-pub fn handle_stack_list(_db: &Database, _args: &StackCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: list stacks".yellow());
+/// Create a stack from a YAML file
+pub fn handle_stack_create(db: &Database, args: &StackCommands, _no_color: bool) -> Result<()> {
+    if let StackCommands::Create(args) = args {
+        let content = std::fs::read_to_string(&args.path)?;
+        let mut stack: Stack = serde_yaml::from_str(&content)?;
+
+        // Validate each substance exists in the database
+        for item in &stack.items {
+            let substance = db.get_substance_by_name(&item.substance_name)?;
+            if substance.is_none() {
+                anyhow::bail!(
+                    "Substance '{}' not found in database. Run 'biohack substance seed' or add it first.",
+                    item.substance_name
+                );
+            }
+        }
+
+        db.insert_stack(&stack)?;
+        println!(
+            "{}",
+            format!("��� Created stack: {}", stack.name).green().bold()
+        );
+        if let Some(desc) = &stack.description {
+            println!("  Description: {}", desc);
+        }
+        println!("  Items: {}", stack.items.len());
+        for item in &stack.items {
+            let schedule_str = item.schedule.as_ref().map(|s| s.to_string()).unwrap_or_else(|| "unscheduled".to_string());
+            println!(
+                "  - {} {} {} ({})",
+                item.substance_name,
+                item.dose,
+                item.route.as_deref().unwrap_or("oral"),
+                schedule_str
+            );
+        }
+    }
     Ok(())
 }
 
-pub fn handle_stack_show(_db: &Database, _args: &StackCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: show stack".yellow());
+/// List all stacks
+pub fn handle_stack_list(db: &Database, _args: &StackCommands, _no_color: bool) -> Result<()> {
+    let stacks = db.list_stacks()?;
+
+    if stacks.is_empty() {
+        println!("{}", "No stacks found".yellow());
+        return Ok(());
+    }
+
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .apply_modifier(UTF8_ROUND_CORNERS);
+    table.set_header(vec!["Name", "Description", "Items", "Schedules"]);
+
+    for stack in stacks {
+        let desc = stack.description.as_deref().unwrap_or("—");
+        let schedules: std::collections::HashSet<String> = stack
+            .items
+            .iter()
+            .filter_map(|i| i.schedule.as_ref().map(|s| s.to_string()))
+            .collect();
+        let schedule_str = if schedules.is_empty() {
+            "unscheduled".to_string()
+        } else {
+            schedules.into_iter().collect::<Vec<_>>().join(", ")
+        };
+
+        table.add_row(vec![
+            Cell::new(&stack.name),
+            Cell::new(desc),
+            Cell::new(stack.items.len().to_string()),
+            Cell::new(schedule_str),
+        ]);
+    }
+
+    println!("{}", table);
     Ok(())
 }
 
-pub fn handle_protocol_list(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: list protocols".yellow());
+/// Show stack details
+pub fn handle_stack_show(db: &Database, args: &StackCommands, _no_color: bool) -> Result<()> {
+    if let StackCommands::Show(args) = args {
+        let stack = db.get_stack(&args.name)?;
+
+        match stack {
+            Some(stack) => {
+                println!("{}", format!("���� Stack: {}", stack.name).green().bold());
+                if let Some(desc) = &stack.description {
+                    println!("  Description: {}", desc);
+                }
+                println!("  Items: {}", stack.items.len());
+                for item in &stack.items {
+                    let schedule_str = item
+                        .schedule
+                        .as_ref()
+                        .map(|s| format!(" [{}]", s))
+                        .unwrap_or_else(|| " [unscheduled]".to_string());
+                    println!(
+                        "  - {} {} {}{}",
+                        item.substance_name,
+                        item.dose,
+                        item.route.as_deref().unwrap_or("oral"),
+                        schedule_str
+                    );
+                }
+            }
+            None => {
+                println!("{}", format!("Stack '{}' not found", args.name).red());
+            }
+        }
+    }
     Ok(())
 }
 
-pub fn handle_protocol_test(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: test protocol".yellow());
-    Ok(())
-}
+/// Log a stack (log all substances in the stack at once)
+pub fn handle_log_stack(db: &Database, args: &LogCommands, _no_color: bool) -> Result<()> {
+    if let LogCommands::Stack(args) = args {
+        let timestamp = parse_time(&args.time)?;
 
-pub fn handle_report(_db: &Database, _args: &ReportArgs, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: generate report".yellow());
+        // Get the stack
+        let stack = db
+            .get_stack(&args.name)?
+            .ok_or_else(|| anyhow::anyhow!("Stack '{}' not found", args.name))?;
+
+        if stack.items.is_empty() {
+            println!("{}", "Stack has no items".yellow());
+            return Ok(());
+        }
+
+        let mut logged = 0;
+        for item in &stack.items {
+            let substance = db
+                .get_substance_by_name(&item.substance_name)?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Substance '{}' in stack not found in database",
+                        item.substance_name
+                    )
+                })?;
+
+            let dose_mg = parse_dose(&item.dose)?;
+
+            let log = SubstanceLog {
+                id: Uuid::new_v4(),
+                substance_id: substance.id,
+                substance_name: item.substance_name.clone(),
+                dose_mg,
+                route: item.route.clone().unwrap_or_else(|| "oral".to_string()),
+                timestamp,
+                notes: Some(format!("Logged via stack: {}", stack.name)),
+                category: Some(substance.category.to_string()),
+            };
+
+            db.insert_substance_log(&log)?;
+            logged += 1;
+            println!(
+                "  {}",
+                format!(
+                    "��� {} {} {}",
+                    item.substance_name, item.dose, item.route.as_deref().unwrap_or("oral")
+                )
+                .green()
+            );
+        }
+
+        println!(
+            "{}",
+            format!(
+                "���� Logged stack '{}': {} items at {}",
+                stack.name,
+                logged,
+                timestamp.format("%Y-%m-%d %H:%M")
+            )
+            .green()
+            .bold()
+        );
+    }
     Ok(())
 }
 
@@ -376,10 +526,30 @@ pub fn handle_check(_db: &Database, _no_color: bool) -> Result<()> {
     Ok(())
 }
 
-/// Parse a dose string (e.g., "400mg", "2.5g", "10ml") into milligrams as f64
+/// Protocol list (placeholder)
+pub fn handle_protocol_list(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
+    println!("{}", "Not yet implemented: list protocols".yellow());
+    Ok(())
+}
+
+/// Protocol test (placeholder)
+pub fn handle_protocol_test(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
+    println!("{}", "Not yet implemented: test protocol".yellow());
+    Ok(())
+}
+
+/// Report generation (placeholder)
+pub fn handle_report(_db: &Database, _args: &ReportArgs, _no_color: bool) -> Result<()> {
+    println!("{}", "Not yet implemented: generate report".yellow());
+    Ok(())
+}
+
+/// Parse a dose string (e.g., "400mg", "2.5g", "10ml", "50mcg") into milligrams as f64
 fn parse_dose(s: &str) -> Result<f64> {
     let s = s.trim().to_lowercase();
-    if s.ends_with("mg") {
+    if s.ends_with("mcg") || s.ends_with("µg") {
+        Ok(s.trim_end_matches("mcg").trim_end_matches("µg").parse::<f64>()? / 1000.0)
+    } else if s.ends_with("mg") {
         Ok(s.trim_end_matches("mg").parse()?)
     } else if s.ends_with("g") {
         Ok(s.trim_end_matches("g").parse::<f64>()? * 1000.0)

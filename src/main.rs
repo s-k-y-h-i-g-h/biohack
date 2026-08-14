@@ -69,9 +69,7 @@ fn main() -> Result<()> {
         Commands::Stack(cmd) => match cmd {
             StackCommands::List => commands::handle_stack_list(&db, &cmd, cli.no_color)?,
             StackCommands::Show { .. } => commands::handle_stack_show(&db, &cmd, cli.no_color)?,
-            StackCommands::Create { .. } => {
-                println!("{}", "Not yet implemented".yellow());
-            }
+            StackCommands::Create { .. } => commands::handle_stack_create(&db, &cmd, cli.no_color)?,
         },
 
         Commands::Protocol(cmd) => match cmd {

@@ -1,0 +1,21 @@
+# Morning Stack - Example stack definition
+# Save as data/stacks/morning_stack.yaml and run: biohack stack create --path data/stacks/morning_stack.yaml
+name: "morning"
+description: "Daily morning supplement stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "morning"
+  - substance_name: "Caffeine"
+    dose: "100mg"
+    route: "oral"
+    schedule: "morning"
+  - substance_name: "Vitamin D3"
+    dose: "50mcg"
+    route: "oral"
+    schedule: "morning"
+  - substance_name: "Omega-3 Fish Oil"
+    dose: "2000mg"
+    route: "oral"
+    schedule: "morning"
