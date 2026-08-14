@@ -4,10 +4,11 @@ use comfy_table::{Cell, Color, Table, modifiers::UTF8_ROUND_CORNERS, presets::UT
 use owo_colors::OwoColorize;
 use serde_yaml;
 use std::fs;
+use std::io::Write;
 use uuid::Uuid;
 
 use crate::cli::*;
-use crate::db::Database;
+use crate::db::{Database, ReportSummary};
 use crate::models::{FoodLog, Schedule, Stack, StackItem, Substance, SubstanceLog, VitalsLog};
 
 /// Initialize the database
@@ -538,9 +539,285 @@ pub fn handle_protocol_test(_db: &Database, _args: &ProtocolCommands, _no_color:
     Ok(())
 }
 
-/// Report generation (placeholder)
-pub fn handle_report(_db: &Database, _args: &ReportArgs, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: generate report".yellow());
+/// Generate markdown report
+fn generate_markdown_report(
+    db: &Database,
+    days: u32,
+    format: &str,
+) -> Result<String> {
+    let summary = db.get_report_summary(days)?;
+    let substance_logs = db.get_recent_substance_logs_detailed(days)?;
+    let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
+    let food_logs = db.get_recent_food_logs_detailed(days)?;
+    let stacks = db.list_stacks()?;
+
+    let mut report = String::new();
+    let now = Utc::now();
+    let date_range_start = now - chrono::Duration::days(days as i64);
+
+    // Header
+    report.push_str(&format!("# Biohack Health Report\n\n"));
+    report.push_str(&format!("**Generated:** {}\n", now.format("%Y-%m-%d %H:%M UTC")));
+    report.push_str(&format!("**Period:** {} to {} ({} days)\n\n", 
+        date_range_start.format("%Y-%m-%d"), now.format("%Y-%m-%d"), days));
+
+    // Summary
+    report.push_str("## Summary\n\n");
+    report.push_str(&format!("- **Substance Logs:** {}\n", summary.substance_logs));
+    report.push_str(&format!("- **Unique Substances:** {}\n", summary.unique_substances));
+    report.push_str(&format!("- **Vitals Logs:** {}\n", summary.vitals_logs));
+    report.push_str(&format!("- **Food Logs:** {}\n", summary.food_logs));
+    report.push_str(&format!("- **Defined Stacks:** {}\n\n", stacks.len()));
+
+    // Stacks
+    if !stacks.is_empty() {
+        report.push_str("## Defined Stacks\n\n");
+        for stack in &stacks {
+            report.push_str(&format!("### {}\n", stack.name));
+            if let Some(desc) = &stack.description {
+                report.push_str(&format!("*{desc}*\n\n"));
+            }
+            for item in &stack.items {
+                let schedule = item.schedule.as_ref().map(|s| format!("[{}] ", s)).unwrap_or_default();
+                let route = item.route.as_deref().unwrap_or("oral");
+                report.push_str(&format!(
+                    "- {schedule}{dose} {route} — {name}\n",
+                    dose = item.dose,
+                    name = item.substance_name
+                ));
+            }
+            report.push_str("\n");
+        }
+    }
+
+    // Substance Logs
+    if !substance_logs.is_empty() {
+        report.push_str("## Substance Intake Log\n\n");
+        report.push_str("| Date & Time | Substance | Dose | Route | Category | Notes |\n");
+        report.push_str("|-------------|-----------|------|-------|----------|-------|\n");
+        for log in &substance_logs {
+            let category = log.category.as_deref().unwrap_or("—");
+            let notes = log.notes.as_deref().unwrap_or("—");
+            let dose_str = format_dose(log.dose_mg);
+            report.push_str(&format!("| {} | {} | {} | {} | {} | {} |\n",
+                log.timestamp.format("%Y-%m-%d %H:%M"),
+                log.substance_name,
+                dose_str,
+                log.route,
+                category,
+                notes.replace('|', "\\|")
+            ));
+        }
+        report.push_str("\n");
+    }
+
+    // Vitals Logs
+    if !vitals_logs.is_empty() {
+        report.push_str("## Vitals Log\n\n");
+        report.push_str("| Date & Time | HR | SBP | DBP | Temp (°C) | SpO2 (%) | HRV (ms) | Weight (kg) | Notes |\n");
+        report.push_str("|-------------|----|-----|-----|-----------|----------|----------|-------------|-------|\n");
+        for log in &vitals_logs {
+            let hr = log.heart_rate.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let sbp = log.sbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let dbp = log.dbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let temp = log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let spo2 = log.spo2.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let hrv = log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let weight = log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let notes = log.notes.as_deref().unwrap_or("—");
+            
+            report.push_str(&format!("| {} | {} | {} | {} | {} | {} | {} | {} | {} |\n",
+                log.timestamp.format("%Y-%m-%d %H:%M"),
+                hr, sbp, dbp, temp, spo2, hrv, weight,
+                notes.replace('|', "\\|")
+            ));
+        }
+        report.push_str("\n");
+    }
+
+    // Food Logs
+    if !food_logs.is_empty() {
+        report.push_str("## Food Intake Log\n\n");
+        report.push_str("| Date & Time | Food | Amount | Unit | Notes |\n");
+        report.push_str("|-------------|------|--------|------|-------|\n");
+        for log in &food_logs {
+            let notes = log.notes.as_deref().unwrap_or("—");
+            report.push_str(&format!("| {} | {} | {} | {} | {} |\n",
+                log.timestamp.format("%Y-%m-%d %H:%M"),
+                log.food_name,
+                log.amount,
+                log.unit,
+                notes.replace('|', "\\|")
+            ));
+        }
+        report.push_str("\n");
+    }
+
+    // Vitals Summary (clinician-friendly)
+    if !vitals_logs.is_empty() {
+        report.push_str("## Vitals Summary (for Clinician Review)\n\n");
+        
+        let hr_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.heart_rate).collect();
+        let sbp_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.sbp).collect();
+        let dbp_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.dbp).collect();
+        let temp_vals: Vec<f32> = vitals_logs.iter().filter_map(|l| l.temperature_c).collect();
+        let spo2_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.spo2).collect();
+        
+        if !hr_vals.is_empty() {
+            let avg_hr = hr_vals.iter().sum::<u32>() as f32 / hr_vals.len() as f32;
+            let min_hr = *hr_vals.iter().min().unwrap();
+            let max_hr = *hr_vals.iter().max().unwrap();
+            report.push_str(&format!("- **Heart Rate:** avg {avg_hr:.0} bpm (range {min_hr}–{max_hr})\n"));
+        }
+        if !sbp_vals.is_empty() && !dbp_vals.is_empty() {
+            let avg_sbp = sbp_vals.iter().sum::<u32>() as f32 / sbp_vals.len() as f32;
+            let avg_dbp = dbp_vals.iter().sum::<u32>() as f32 / dbp_vals.len() as f32;
+            let min_sbp = *sbp_vals.iter().min().unwrap();
+            let max_sbp = *sbp_vals.iter().max().unwrap();
+            let min_dbp = *dbp_vals.iter().min().unwrap();
+            let max_dbp = *dbp_vals.iter().max().unwrap();
+            report.push_str(&format!("- **Blood Pressure:** avg {avg_sbp:.0}/{avg_dbp:.0} mmHg (SBP range {min_sbp}–{max_sbp}, DBP range {min_dbp}–{max_dbp})\n"));
+        }
+        if !temp_vals.is_empty() {
+            let avg_temp = temp_vals.iter().sum::<f32>() / temp_vals.len() as f32;
+            let min_temp = temp_vals.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+            let max_temp = temp_vals.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+            report.push_str(&format!("- **Temperature:** avg {avg_temp:.1}°C (range {min_temp:.1}–{max_temp:.1})\n"));
+        }
+        if !spo2_vals.is_empty() {
+            let min_spo2 = *spo2_vals.iter().min().unwrap();
+            let max_spo2 = *spo2_vals.iter().max().unwrap();
+            report.push_str(&format!("- **SpO2:** range {min_spo2}–{max_spo2}%\n"));
+        }
+        report.push_str("\n");
+    }
+
+    // Substance Frequency
+    if !substance_logs.is_empty() {
+        report.push_str("## Substance Frequency\n\n");
+        let mut freq: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for log in &substance_logs {
+            *freq.entry(log.substance_name.clone()).or_insert(0) += 1;
+        }
+        let mut freq_vec: Vec<_> = freq.into_iter().collect();
+        freq_vec.sort_by(|a, b| b.1.cmp(&a.1));
+        
+        report.push_str("| Substance | Log Count |\n");
+        report.push_str("|-----------|-----------|\n");
+        for (name, count) in freq_vec {
+            report.push_str(&format!("| {} | {} |\n", name, count));
+        }
+        report.push_str("\n");
+    }
+
+    // Footer
+    report.push_str("---\n");
+    report.push_str("*Report generated by biohack v0.1.0 — This tool is for informational and tracking purposes only. It does not provide medical advice. Always consult a qualified healthcare provider for medical concerns.*\n");
+
+    Ok(report)
+}
+
+/// Generate CSV export
+fn generate_csv_report(
+    db: &Database,
+    days: u32,
+) -> Result<String> {
+    let substance_logs = db.get_recent_substance_logs_detailed(days)?;
+    let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
+    let food_logs = db.get_recent_food_logs_detailed(days)?;
+
+    let mut csv = String::new();
+
+    // Substance logs CSV
+    if !substance_logs.is_empty() {
+        csv.push_str("# Substance Logs\n");
+        csv.push_str("timestamp,substance_name,dose_mg,route,category,notes\n");
+        for log in &substance_logs {
+            let category = log.category.as_deref().unwrap_or("");
+            let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
+            csv.push_str(&format!("{},{},{},{},{},{}\n",
+                log.timestamp.to_rfc3339(),
+                log.substance_name.replace('"', "\"\""),
+                log.dose_mg,
+                log.route,
+                category,
+                notes
+            ));
+        }
+        csv.push_str("\n");
+    }
+
+    // Vitals logs CSV
+    if !vitals_logs.is_empty() {
+        csv.push_str("# Vitals Logs\n");
+        csv.push_str("timestamp,heart_rate,sbp,dbp,temperature_c,spo2,hrv_rmssd,weight_kg,notes\n");
+        for log in &vitals_logs {
+            let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
+            csv.push_str(&format!("{},{},{},{},{},{},{},{},{}\n",
+                log.timestamp.to_rfc3339(),
+                log.heart_rate.map(|v| v.to_string()).unwrap_or_default(),
+                log.sbp.map(|v| v.to_string()).unwrap_or_default(),
+                log.dbp.map(|v| v.to_string()).unwrap_or_default(),
+                log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_default(),
+                log.spo2.map(|v| v.to_string()).unwrap_or_default(),
+                log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_default(),
+                log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_default(),
+                notes
+            ));
+        }
+        csv.push_str("\n");
+    }
+
+    // Food logs CSV
+    if !food_logs.is_empty() {
+        csv.push_str("# Food Logs\n");
+        csv.push_str("timestamp,food_name,amount,unit,notes\n");
+        for log in &food_logs {
+            let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
+            csv.push_str(&format!("{},{},{},{},{}\n",
+                log.timestamp.to_rfc3339(),
+                log.food_name.replace('"', "\"\""),
+                log.amount,
+                log.unit,
+                notes
+            ));
+        }
+        csv.push_str("\n");
+    }
+
+    Ok(csv)
+}
+
+/// Write report to file or stdout
+fn write_report(output: Option<&std::path::Path>, content: &str) -> Result<()> {
+    if let Some(path) = output {
+        let mut file = std::fs::File::create(path)?;
+        file.write_all(content.as_bytes())?;
+        println!("{}", format!("Report written to {}", path.display()).green());
+    } else {
+        print!("{content}");
+    }
+    Ok(())
+}
+
+/// Report generation command handler
+pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Result<()> {
+    let format = args.format.to_lowercase();
+    
+    match format.as_str() {
+        "markdown" | "md" => {
+            let report = generate_markdown_report(db, args.days, &format)?;
+            write_report(args.output.as_deref(), &report)?;
+        }
+        "csv" => {
+            let report = generate_csv_report(db, args.days)?;
+            write_report(args.output.as_deref(), &report)?;
+        }
+        _ => {
+            anyhow::bail!("Unknown format '{}'. Supported formats: markdown, csv", args.format);
+        }
+    }
+    
     Ok(())
 }
 

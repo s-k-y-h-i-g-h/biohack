@@ -75,10 +75,10 @@
 **Checkpoint: Stack Management** ��
 
 ## Phase 8: Reporting & Export (v1.0)
-- [ ] Task 24: Implement markdown report generation
-- [ ] Task 25: Implement CSV export
-- [ ] Task 26: Add `biohack report --days N --format markdown|csv` command
-- [ ] Task 27: Clinician-ready formatting (structured sections)
+- [x] Task 24: Implement markdown report generation
+- [x] Task 25: Implement CSV export
+- [x] Task 26: Add `biohack report --days N --format markdown|csv` command
+- [x] Task 27: Clinician-ready formatting (structured sections)
 
 **Checkpoint: Reporting** ����������� ���������
 

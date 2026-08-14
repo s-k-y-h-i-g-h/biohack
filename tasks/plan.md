@@ -87,12 +87,12 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 **Checkpoint: Stack Management** ���� ����������� ���������
 
 ## Phase 8: Reporting & Export (v1.0)
-- [ ] Task 24: Implement markdown report generation
-- [ ] Task 25: Implement CSV export
-- [ ] Task 26: Add `biohack report --days N --format markdown|csv` command
-- [ ] Task 27: Clinician-ready formatting (structured sections)
+- [x] Task 24: Implement markdown report generation
+- [x] Task 25: Implement CSV export
+- [x] Task 26: Add `biohack report --days N --format markdown|csv` command
+- [x] Task 27: Clinician-ready formatting (structured sections)
 
-**Checkpoint: Reporting** ������������� ����������� ����������� ���������
+**Checkpoint: Reporting** �� ������������� ����������� ����������� ���������
 
 ## Phase 9: Polish & Documentation (v1.0)
 - [ ] Task 28: Create README.md with installation, usage examples, command reference

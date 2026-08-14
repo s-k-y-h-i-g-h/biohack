@@ -302,4 +302,119 @@ impl Database {
 
         Ok(results)
     }
+
+    /// Get report summary stats for a time range
+    pub fn get_report_summary(&self, days: u32) -> Result<ReportSummary> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut substance_count = 0;
+        let mut vitals_count = 0;
+        let mut food_count = 0;
+        let mut unique_substances = std::collections::HashSet::new();
+
+        // Count substance logs
+        for item in self.substance_logs.iter() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                if log.timestamp >= since {
+                    substance_count += 1;
+                    unique_substances.insert(log.substance_name.clone());
+                }
+            }
+        }
+
+        // Count vitals logs
+        for item in self.vitals_logs.iter() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                if log.timestamp >= since {
+                    vitals_count += 1;
+                }
+            }
+        }
+
+        // Count food logs
+        for item in self.substance_logs.iter() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                if log.timestamp >= since {
+                    food_count += 1;
+                }
+            }
+        }
+
+        Ok(ReportSummary {
+            days,
+            substance_logs: substance_count,
+            vitals_logs: vitals_count,
+            food_logs: food_count,
+            unique_substances: unique_substances.len(),
+        })
+    }
+
+    /// Get substance logs with full details for report
+    pub fn get_recent_substance_logs_detailed(&self, days: u32) -> Result<Vec<SubstanceLog>> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut results = Vec::new();
+
+        for item in self.substance_logs.iter().rev() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(log);
+                }
+            }
+        }
+
+        // Sort by timestamp ascending (oldest first for report)
+        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        Ok(results)
+    }
+
+    /// Get vitals logs with full details for report
+    pub fn get_recent_vitals_logs_detailed(&self, days: u32) -> Result<Vec<VitalsLog>> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut results = Vec::new();
+
+        for item in self.vitals_logs.iter().rev() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(log);
+                }
+            }
+        }
+
+        // Sort by timestamp ascending (oldest first for report)
+        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        Ok(results)
+    }
+
+    /// Get food logs with full details for report
+    pub fn get_recent_food_logs_detailed(&self, days: u32) -> Result<Vec<FoodLog>> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut results = Vec::new();
+
+        for item in self.substance_logs.iter().rev() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(log);
+                }
+            }
+        }
+
+        // Sort by timestamp ascending (oldest first for report)
+        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        Ok(results)
+    }
+}
+
+/// Summary statistics for report header
+#[derive(Debug, Clone)]
+pub struct ReportSummary {
+    pub days: u32,
+    pub substance_logs: usize,
+    pub vitals_logs: usize,
+    pub food_logs: usize,
+    pub unique_substances: usize,
 }

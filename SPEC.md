@@ -67,7 +67,7 @@ quality_gates:
 - **Acceptance**: `biohack report --days 7 --format markdown` outputs structured report
 - **Priority**: medium
 - **Dependencies**: [REQ-003, REQ-004]
-- **Status**: ��� NOT STARTED
+- **Status**: �� COMPLETED
 
 ### REQ-009: Beautiful CLI Output
 - **Description**: Colored tables, bold/underline, progress indicators, readable timestamps
