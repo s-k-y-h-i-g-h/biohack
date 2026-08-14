@@ -1,0 +1,354 @@
+# Biohack Seed Substances Database
+# Curated for common biohacker stacks, nootropics, and safety monitoring
+# Format: YAML list of substance objects
+
+- name: L-Theanine
+  id: "550e8400-e29b-41d4-a716-446655440001"
+  aliases: ["Suntheanine", "gamma-glutamylethylamide"]
+  category: Nootropic
+  min_dose_mg: 50
+  max_dose_mg: 400
+  typical_dose_mg: 200
+  half_life_hours: 1.2
+  contraindications: ["low blood pressure"]
+  interactions: []
+  notes: "Promotes alpha-wave activity, reduces anxiety without sedation"
+  sources: ["Examine.com", "PubChem CID 5462226"]
+
+- name: Caffeine
+  id: "550e8400-e29b-41d4-a716-446655440002"
+  aliases: ["1,3,7-trimethylpurine-2,6-dione", "theine"]
+  category: Stimulant
+  min_dose_mg: 25
+  max_dose_mg: 400
+  typical_dose_mg: 100
+  half_life_hours: 5.0
+  contraindications: ["severe anxiety", "arrhythmia", "uncontrolled hypertension"]
+  interactions: ["ephedrine", "synephrine", "MAOIs"]
+  notes: "Adenosine receptor antagonist; half-life varies with genetics"
+  sources: ["FDA", "PubChem CID 2519"]
+
+- name: Magnesium Glycinate
+  id: "550e8400-e29b-41d4-a716-446655440003"
+  aliases: ["magnesium bisglycinate"]
+  category: Supplement
+  min_dose_mg: 100
+  max_dose_mg: 400
+  typical_dose_mg: 200
+  half_life_hours: 6.0
+  contraindications: ["severe renal impairment"]
+  interactions: ["bisphosphonates", "tetracyclines", "quinolones"]
+  notes: "Chelated form for better absorption and less GI distress"
+  sources: ["NIH ODS", "PubChem CID 16211108"]
+
+- name: Vitamin D3
+  id: "550e8400-e29b-41d4-a716-446655440004"
+  aliases: ["cholecalciferol", "colecalciferol"]
+  category: Vitamin
+  min_dose_mg: 0.025  # 25 mcg = 1000 IU
+  max_dose_mg: 0.1     # 100 mcg = 4000 IU
+  typical_dose_mg: 0.05  # 50 mcg = 2000 IU
+  half_life_hours: 15.0  # ~15 days for calcidiol
+  contraindications: ["hypercalcemia", "sarcoidosis", "certain lymphomas"]
+  interactions: ["digoxin", "thiazide diuretics"]
+  notes: "Fat-soluble; dose based on serum 25(OH)D levels"
+  sources: ["NIH ODS", "PubChem CID 5280489"]
+
+- name: Omega-3 Fish Oil
+  id: "550e8400-e29b-41d4-a716-446655440005"
+  aliases: ["EPA/DHA", "fish oil triglycerides"]
+  category: Supplement
+  min_dose_mg: 500
+  max_dose_mg: 4000
+  typical_dose_mg: 2000
+  half_life_hours: 48.0  # ~2 days for incorporation into membranes
+  contraindications: ["active bleeding", "upcoming surgery"]
+  interactions: ["warfarin", "aspirin", "other anticoagulants"]
+  notes: "Typical dose refers to combined EPA+DHA"
+  sources: ["NIH ODS", "Examine.com"]
+
+- name: Modafinil
+  id: "550e8400-e29b-41d4-a716-446655440006"
+  aliases: ["Provigil"]
+  category: Medication
+  min_dose_mg: 50
+  max_dose_mg: 200
+  typical_dose_mg: 100
+  half_life_hours: 15.0
+  contraindications: ["severe arrhythmia", "left ventricular hypertrophy", "moderate-severe hypertension"]
+  interactions: ["cyclosporine", "theophylline", "warfarin", "MAOIs", "SSRIs"]
+  notes: "Schedule IV controlled substance in US; dopamine reuptake inhibitor"
+  sources: ["FDA Label", "PubChem CID 4092"]
+
+- name: Armodafinil
+  id: "550e8400-e29b-41d4-a716-446655440007"
+  aliases: ["Nuvigil"]
+  category: Medication
+  min_dose_mg: 50
+  max_dose_mg: 250
+  typical_dose_mg: 150
+  half_life_hours: 15.0
+  contraindications: ["severe arrhythmia", "left ventricular hypertrophy", "moderate-severe hypertension"]
+  interactions: ["cyclosporine", "theophylline", "warfarin", "MAOIs", "SSRIs"]
+  notes: "Longer-lasting enantiomer of modafinil"
+  sources: ["FDA Label", "PubChem CID 6450557"]
+
+- name: Creatine Monohydrate
+  id: "550e8400-e29b-41d4-a716-446655440008"
+  aliases: ["creatine", "creatinine"]
+  category: Supplement
+  min_dose_mg: 3000
+  max_dose_mg: 5000
+  typical_dose_mg: 5000
+  half_life_hours: 3.0
+  contraindications: ["renal impairment"]
+  interactions: ["nephrotoxic drugs", "cimetidine"]
+  notes: "Loading phase: 20g/day for 5-7 days, then maintenance"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 586"]
+
+- name: Rhodiola Rosea
+  id: "550e8400-e29b-41d4-a716-446655440009"
+  aliases: ["golden root", "arctic root"]
+  category: Herb
+  min_dose_mg: 100
+  max_dose_mg: 400
+  typical_dose_mg: 200
+  half_life_hours: 6.0  # approximate for active compounds
+  contraindications: ["bipolar disorder", "manic states"]
+  interactions: ["MAOIs", "SSRIs", "stimulants"]
+  notes: "Standardized to 3% rosavins and 1% salidroside"
+  sources: ["Examine.com", "PubChem CID 10587"]
+
+- name: Ashwagandha
+  id: "550e8400-e29b-41d4-a716-446655440010"
+  aliases: ["Withania somnifera", "Indian ginseng"]
+  category: Herb
+  min_dose_mg: 300
+  max_dose_mg: 600
+  typical_dose_mg: 500
+  half_life_hours: 4.0  # approximate for withanolides
+  contraindications: ["hyperthyroidism", "pregnancy (consult doctor)"]
+  interactions: ["immunosuppressants", "sedatives", "thyroid hormone"]
+  notes: "Standardized to 5% withanolides"
+  sources: ["Examine.com", "PubChem CID 5318516"]
+
+- name: Melatonin
+  id: "550e8400-e29b-41d4-a716-446655440011"
+  aliases: ["N-acetyl-5-methoxytryptamine"]
+  category: Hormone
+  min_dose_mg: 0.1
+  max_dose_mg: 10
+  typical_dose_mg: 0.5
+  half_life_hours: 0.5  # ~30 minutes
+  contraindications: ["autoimmune disorders", "on immunosuppressants"]
+  interactions: ["warfarin", " corticosteroids", "hypertension medications"]
+  notes: "Dose timing critical; physiological dose is 0.1-0.3mg"
+  sources: ["NIH ODS", "PubChem CID 896"]
+
+- name: Nicotine
+  id: "550e8400-e29b-41d4-a716-446655440012"
+  aliases: ["(S)-3-(1-methyl-2-pyrrolidinyl)pyridine"]
+  category: Drug
+  min_dose_mg: 0.5
+  max_dose_mg: 4
+  typical_dose_mg: 1
+  half_life_hours: 2.0
+  contraindications: ["pregnancy", "severe cardiovascular disease", "recent MI"]
+  interactions: ["insulin", "beta-blockers", "some antipsychotics"]
+  notes: "Highly addictive; harm reduction approach recommended"
+  sources: ["PubChem CID 89594"]
+
+- name: Alcohol (Ethanol)
+  id: "550e8400-e29b-41d4-a716-446655440013"
+  aliases: ["ethanol", "ethyl alcohol", "drinking alcohol"]
+  category: Drug
+  min_dose_mg: 5000  # 5g = ~1 standard drink
+  max_dose_mg: 15000  # 15g = ~3 standard drinks (binge threshold)
+  typical_dose_mg: 10000  # 10g = ~2 standard drinks
+  half_life_hours: 1.0  # zero-order kinetics above threshold
+  contraindications: ["pregnancy", "active ulcer", "severe liver disease"]
+  interactions: ["acetaminophen", "antibiotics", "antidepressants", "antidiabetics"]
+  notes: "Standard drink = 10g pure alcohol; impairment begins ~20-30mg/dL blood"
+  sources: ["NIH", "PubChem CID 702"]
+
+- name: Psilocybin
+  id: "550e8400-e29b-41d4-a716-446655440014"
+  aliases: ["4-phosphoryloxy-N,N-dimethyltryptamine", "4-PO-DMT"]
+  category: Drug
+  min_dose_mg: 2
+  max_dose_mg: 30
+  typical_dose_mg: 10
+  half_life_hours: 3.0  # for psilocin (active metabolite)
+  contraindications: ["personal/family history of psychosis", "severe cardiovascular disease"]
+  interactions: ["SSRIs (risk of serotonin syndrome)", "MAOIs", "tramadol", "Lithium"]
+  notes: "Schedule I in most countries; depenalized in some jurisdictions"
+  sources: ["PubChem CID 60877", "ClinicalTrials.gov"]
+
+- name: LSD
+  id: "550e8400-e29b-41d4-a716-446655440015"
+  aliases: ["lysergic acid diethylamide", "LSD-25"]
+  category: Drug
+  min_dose_mg: 0.01  # 10 mcg
+  max_dose_mg: 0.2    # 200 mcg
+  typical_dose_mg: 0.1  # 100 mcg
+  half_life_hours: 3.0  # ~3-4 hours for main effects
+  contraindications: ["personal/family history of psychosis", "uncontrolled hypertension"]
+  interactions: ["SSRIs (may blunt effect)", "lithium", "tramadol", "antipsychotics"]
+  notes: "Schedule I; dose in micrograms (mcg), not milligrams"
+  sources: ["PubChem CID 5761", "MAPS"]
+
+- name: Testosterone Enanthate
+  id: "550e8400-e29b-41d4-a716-446655440016"
+  aliases: ["Testoviron", "Delatestryl"]
+  category: Hormone
+  min_dose_mg: 25  # per week (low TRT)
+  max_dose_mg: 400 # per week (high performance)
+  typical_dose_mg: 100 # per week (common TRT)
+  half_life_hours: 168.0  # ~7 days ester
+  contraindications: ["prostate cancer", "breast cancer (male)", "severe sleep apnea", "untreated severe BPH"]
+  interactions: ["insulin", "corticosteroids", "anticoagulants"]
+  notes: "IM injection; monitor hematocrit, PSA, lipids"
+  sources: ["FDA Label", "PubChem CID 9757"]
+
+- name: Estradiol Valerate
+  id: "550e8400-e29b-41d4-a716-446655440017"
+  aliases: ["Progynon-D", "Valergen"]
+  category: Hormone
+  min_dose_mg: 1.0  # per week or per injection
+  max_dose_mg: 10.0 # per week or per injection
+  typical_dose_mg: 4.0 # common dosing
+  half_life_hours: 36.0  # ~1.5 days ester
+  contraindications: ["estrogen-sensitive cancer", "active thromboembolic disorder", "undiagnosed vaginal bleeding"]
+  interactions: ["SSRIs (may increase levels)", "thyroid hormone", "insulin"]
+  notes: "IM or subcutaneous injection; monitor clotting factors, lipids"
+  sources: ["FDA Label", "PubChem CID 5755"]
+
+- name: L-Tyrosine
+  id: "550e8400-e29b-41d4-a716-446655440018"
+  aliases: ["4-hydroxyphenylalanine"]
+  category: Supplement
+  min_dose_mg: 500
+  max_dose_mg: 2000
+  typical_dose_mg: 1000
+  half_life_hours: 3.0
+  contraindications: ["hyperthyroidism", "melanoma", "thyrotoxicosis"]
+  interactions: ["MAOIs", "levodopa", "thyroid hormone"]
+  notes: "Precursor to dopamine, norepinephrine, epinephrine"
+  sources: ["Examine.com", "PubChem CID 6057"]
+
+- name: NAC
+  id: "550e8400-e29b-41d4-a716-446655440019"
+  aliases: ["N-acetylcysteine", "acetylcysteine"]
+  category: Supplement
+  min_dose_mg: 300
+  max_dose_mg: 1800
+  typical_dose_mg: 600
+  half_life_hours: 6.0
+  contraindications: ["cystinuria", "active peptic ulcer"]
+  interactions: ["nitroglycerin", "activated charcoal", "charcoal"]
+  notes: "Glutathione precursor; mucolytic and hepatoprotective"
+  sources: ["NIH ODS", "PubChem CID 921"]
+
+- name: CoQ10
+  id: "550e8400-e29b-41d4-a716-446655440020"
+  aliases: ["ubiquinone", "coenzyme Q10"]
+  category: Supplement
+  min_dose_mg: 50
+  max_dose_mg: 400
+  typical_dose_mg: 200
+  half_life_hours: 336.0  # ~14 days (tissue dependent)
+  contraindications: ["warfarin use (may reduce INR)"]
+  interactions: ["warfarin", "insulin", "some chemotherapy agents"]
+  notes: "Ubiquinol form has better absorption; fat-soluble"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 2722798"]
+
+- name: Zinc
+  id: "550e8400-e29b-41d4-a716-446655440021"
+  aliases: ["zinc gluconate", "zinc picolinate", "zinc citrate"]
+  category: Mineral
+  min_dose_mg: 5
+  max_dose_mg: 40
+  typical_dose_mg: 15
+  half_life_hours: 24.0  # approximate
+  contraindications: ["hemochromatosis"]
+  interactions: ["antibiotics (quinolones, tetracyclines)", "penicillamine"]
+  notes: "Upper limit 40mg/day for adults; take with food to reduce nausea"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 5462221"]
+
+- name: Vitamin B12
+  id: "550e8400-e29b-41d4-a716-446655440022"
+  aliases: ["methylcobalamin", "cyanocobalamin", "hydroxocobalamin"]
+  category: Vitamin
+  min_dose_mg: 0.025  # 25 mcg
+  max_dose_mg: 1.0    # 1000 mcg
+  typical_dose_mg: 0.5  # 500 mcg
+  half_life_hours: 360.0  # ~15 days (liver storage)
+  contraindications: ["Leber's disease", "cobalt allergy"]
+  interactions: ["chloramphenicol", "protamine sulfate"]
+  notes: "Intrinsic factor dependent absorption; sublingual bypasses GI issues"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 10960"]
+
+- name: Folate
+  id: "550e8400-e29b-41d4-a716-446655440023"
+  aliases: ["folic acid", "5-MTHF", "levomefolic acid"]
+  category: Vitamin
+  min_dose_mg: 0.2    # 200 mcg
+  max_dose_mg: 1.5    # 1500 mcg
+  typical_dose_mg: 0.4  # 400 mcg
+  half_life_hours: 3.5  # ~3.5 hours plasma
+  contraindications: ["vitamin B12 deficiency (masking risk)"]
+  interactions: ["methotrexate", "phenytoin", "sulfasalazine"]
+  notes: "5-MTHF form bypasses MTHFR polymorphism; folic acid synthetic"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 940"]
+
+- name: Nicotinamide Riboside
+  id: "550e8400-e29b-41d4-a716-446655440024"
+  aliases: ["NR", "NIAGEN"]
+  category: Supplement
+  min_dose_mg: 100
+  max_dose_mg: 1000
+  typical_dose_mg: 300
+  half_life_hours: 4.0  # approximate
+  contraindications: []
+  interactions: []
+  notes: "NAD+ precursor; being studied for longevity and metabolic health"
+  sources: ["Examine.com", "ClinicalTrials.gov", "PubChem CID 11524777"]
+
+- name: Resveratrol
+  id: "550e8400-e29b-41d4-a716-446655440025"
+  aliases: ["3,5,4'-trihydroxystilbene"]
+  category: Supplement
+  min_dose_mg: 50
+  max_dose_mg: 500
+  typical_dose_mg: 250
+  half_life_hours: 9.0  # ~9 hours
+  contraindications: []
+  interactions: ["warfarin", "CYP3A4 substrates", "some estrogen metabolites"]
+  notes: "Trans-resveratrol is the active isomer"
+  sources: ["Examine.com", "PubChem CID 445154"]
+
+- name: Curcumin
+  id: "550e8400-e29b-41d4-a716-446655440026"
+  aliases: ["diferuloylmethane", "turmeric extract"]
+  category: Supplement
+  min_dose_mg: 500
+  max_dose_mg: 2000
+  typical_dose_mg: 1000
+  half_life_hours: 8.0  # approximate
+  contraindications: ["bile duct obstruction", "gallstones", "active peptic ulcer"]
+  interactions: ["warfarin", "immunosuppressants", "chemotherapy agents"]
+  notes: "Best with piperine (black pepper extract) for absorption"
+  sources: ["Examine.com", "PubChem CID 969516"]
+
+- name: Sulbutiamine
+  id: "550e8400-e29b-41d4-a716-446655440027"
+  aliases: ["isobutyryl thiamine disulfide"]
+  category: Supplement
+  min_dose_mg: 200
+  max_dose_mg: 600
+  typical_dose_mg: 400
+  half_life_hours: 5.0  # approximate
+  contraindications: []
+  interactions: []
+  notes: "Thiamine derivative designed to cross blood-brain barrier better"
+  sources: ["Examine.com", "PubChem CID 65657"]
