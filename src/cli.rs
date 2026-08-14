@@ -224,7 +224,7 @@ pub enum ShowCommands {
 #[derive(Args, Debug)]
 pub struct ShowSubstancesArgs {
     /// Days to look back
-    #[arg(short = 'd', long, default_value = "3")]
+    #[arg(long, default_value = "3")]
     pub days: u32,
 
     /// Filter by substance name
@@ -235,14 +235,14 @@ pub struct ShowSubstancesArgs {
 #[derive(Args, Debug)]
 pub struct ShowVitalsArgs {
     /// Days to look back
-    #[arg(short = 'd', long, default_value = "3")]
+    #[arg(long, default_value = "3")]
     pub days: u32,
 }
 
 #[derive(Args, Debug)]
 pub struct ShowTimelineArgs {
     /// Days to look back
-    #[arg(short = 'd', long, default_value = "3")]
+    #[arg(long, default_value = "3")]
     pub days: u32,
 }
 
@@ -345,7 +345,7 @@ pub struct ProtocolShowArgs {
 #[derive(Args, Debug)]
 pub struct ReportArgs {
     /// Days to include
-    #[arg(short = 'd', long, default_value = "7")]
+    #[arg(long, default_value = "7")]
     pub days: u32,
 
     /// Output format (markdown, json, csv)
