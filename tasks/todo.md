@@ -67,12 +67,12 @@
 - [x] Manual check: `biohack show timeline --days 7` shows combined chronological table
 
 ## Phase 7: Stack Management (v1.0)
-- [ ] Task 20: Implement stack YAML schema and data model
-- [ ] Task 21: Create `biohack stack create/list/show` commands
-- [ ] Task 22: Implement `biohack log stack <name>` to log multiple substances at once
-- [ ] Task 23: Add stack scheduling (morning/evening/prn)
+- [x] Task 20: Implement stack YAML schema and data model
+- [x] Task 21: Create `biohack stack create/list/show` commands
+- [x] Task 22: Implement `biohack log stack <name>` to log multiple substances at once
+- [x] Task 23: Add stack scheduling (morning/evening/prn)
 
-**Checkpoint: Stack Management** ����������� ���������
+**Checkpoint: Stack Management** ��
 
 ## Phase 8: Reporting & Export (v1.0)
 - [ ] Task 24: Implement markdown report generation
