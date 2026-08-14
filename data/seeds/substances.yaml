@@ -352,3 +352,46 @@
   interactions: []
   notes: "Thiamine derivative designed to cross blood-brain barrier better"
   sources: ["Examine.com", "PubChem CID 65657"]
+- id: "1abf6ce6-4707-4cfc-9554-4be68cb0d459"
+  name: N-Methyl-Cyclazodone
+  category: Stimulant
+  typical_dose_mg: 5.0
+  half_life_hours: 8.0
+  contraindications:
+    - anxiety
+    - hypertension
+    - heart disease
+  aliases: []
+  min_dose_mg: 1.0
+  max_dose_mg: 20.0
+  interactions: []
+  notes: null
+  sources: []
+- id: "a71ecbaa-2746-40e0-b37f-c9f53068151d"
+  name: CBD
+  category: Supplement
+  typical_dose_mg: 25.0
+  half_life_hours: 6.0
+  contraindications:
+    - liver disease
+  aliases: []
+  min_dose_mg: 5.0
+  max_dose_mg: 300.0
+  interactions: []
+  notes: null
+  sources: []
+- id: "b8f0d123-4e5f-6a7b-8c9d-0e1f2a3b4c5d"
+  name: Kratom
+  category: Supplement
+  typical_dose_mg: 2000.0
+  half_life_hours: 5.0
+  contraindications:
+    - liver disease
+    - kidney disease
+    - pregnancy
+  aliases: []
+  min_dose_mg: 500.0
+  max_dose_mg: 8000.0
+  interactions: []
+  notes: null
+  sources: []
