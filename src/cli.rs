@@ -6,14 +6,51 @@ use std::path::PathBuf;
     name = "biohack",
     version,
     about = "Biohacker's safety-first tracking CLI",
-    long_about = "A local-first tool for logging substances, vitals, food, stacks, and running deterministic safety protocols."
+    long_about = "\
+A local-first tool for logging substances, vitals, food, stacks, and running deterministic safety protocols.
+
+EXAMPLES:
+  # Initialize database and seed with 27 curated substances
+  biohack init
+  biohack substance seed
+
+  # Log a supplement
+  biohack log substance --name \"L-Theanine\" --dose 400mg
+
+  # Log vitals
+  biohack log vitals --hr 88 --sbp 120 --dbp 80 --temp 37.0
+
+  # Log food (MVP)
+  biohack log food --name \"Broccoli\" --amount 2 --unit cups
+
+  # Run safety check
+  biohack check
+
+  # View recent logs
+  biohack show substances --days 7
+  biohack show vitals --days 3
+  biohack show timeline --days 7
+
+  # Browse substance database
+  biohack substance list
+  biohack substance list --category nootropic
+  biohack substance search magnesium
+
+DOCUMENTATION:
+  https://github.com/s-k-y-h-i-g-h/biohack/blob/main/README.md
+
+SAFETY DISCLAIMER:
+  This tool is for informational and tracking purposes only.
+  It does not provide medical advice. Always consult a qualified
+  healthcare provider for medical concerns.\
+"
 )]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
     /// Database path (default: ~/.local/share/biohack/biohack.db)
-    #[arg(short, long, global = true, env = "BIOHACK_DB")]
+    #[arg(short = 'd', long, global = true, env = "BIOHACK_DB")]
     pub db_path: Option<PathBuf>,
 
     /// Enable verbose output
@@ -39,15 +76,15 @@ pub enum Commands {
     #[command(subcommand)]
     Substance(SubstanceCommands),
 
-    /// Manage stacks
+    /// Manage stacks (not yet implemented)
     #[command(subcommand)]
     Stack(StackCommands),
 
-    /// Safety protocol commands
+    /// Safety protocol commands (not yet implemented)
     #[command(subcommand)]
     Protocol(ProtocolCommands),
 
-    /// Generate reports
+    /// Generate reports (not yet implemented)
     Report(ReportArgs),
 
     /// Run safety check against current logs
@@ -60,22 +97,27 @@ pub enum Commands {
 #[derive(Subcommand, Debug)]
 pub enum LogCommands {
     /// Log a substance intake
+    ///
+    /// Dose formats: 400mg, 2.5g, 10ml, 400 (assumes mg)
+    /// Routes: oral, sublingual, transdermal, injection, inhalation, rectal, nasal
     Substance(SubstanceArgs),
 
     /// Log vitals
+    ///
+    /// At least one vital sign is required.
     Vitals(VitalsArgs),
 
-    /// Log a predefined stack
+    /// Log a predefined stack (not yet implemented)
     Stack(StackArgs),
 
-    /// Log individual food intake
+    /// Log individual food intake (MVP)
     Food(FoodArgs),
 }
 
 #[derive(Args, Debug)]
 pub struct SubstanceArgs {
     /// Substance name (fuzzy-matched against database)
-    #[arg(short, long)]
+    #[arg(short = 'n', long)]
     pub name: String,
 
     /// Dose (e.g., "400mg", "2.5g", "10ml")
@@ -87,7 +129,7 @@ pub struct SubstanceArgs {
     pub route: String,
 
     /// Timestamp (ISO 8601, default: now)
-    #[arg(short, long)]
+    #[arg(short = 't', long)]
     pub time: Option<String>,
 
     /// Additional notes
@@ -126,7 +168,7 @@ pub struct VitalsArgs {
     pub weight: Option<f32>,
 
     /// Timestamp (ISO 8601, default: now)
-    #[arg(short, long)]
+    #[arg(short = 't', long)]
     pub time: Option<String>,
 
     /// Additional notes
@@ -140,26 +182,26 @@ pub struct StackArgs {
     pub name: String,
 
     /// Timestamp (ISO 8601, default: now)
-    #[arg(short, long)]
+    #[arg(short = 't', long)]
     pub time: Option<String>,
 }
 
 #[derive(Args, Debug)]
 pub struct FoodArgs {
     /// Food name (to be matched against food database in v1.1)
-    #[arg(short, long)]
+    #[arg(short = 'n', long)]
     pub name: String,
 
     /// Amount consumed
-    #[arg(short, long)]
+    #[arg(short = 'a', long)]
     pub amount: f32,
 
     /// Unit of measurement (g, mg, cups, slices, etc.)
-    #[arg(short, long, default_value = "g")]
+    #[arg(short = 'u', long, default_value = "g")]
     pub unit: String,
 
     /// Timestamp (ISO 8601, default: now)
-    #[arg(short, long)]
+    #[arg(short = 't', long)]
     pub time: Option<String>,
 
     /// Additional notes
@@ -182,25 +224,25 @@ pub enum ShowCommands {
 #[derive(Args, Debug)]
 pub struct ShowSubstancesArgs {
     /// Days to look back
-    #[arg(short, long, default_value = "3")]
+    #[arg(short = 'd', long, default_value = "3")]
     pub days: u32,
 
     /// Filter by substance name
-    #[arg(short, long)]
+    #[arg(short = 'n', long)]
     pub name: Option<String>,
 }
 
 #[derive(Args, Debug)]
 pub struct ShowVitalsArgs {
     /// Days to look back
-    #[arg(short, long, default_value = "3")]
+    #[arg(short = 'd', long, default_value = "3")]
     pub days: u32,
 }
 
 #[derive(Args, Debug)]
 pub struct ShowTimelineArgs {
     /// Days to look back
-    #[arg(short, long, default_value = "3")]
+    #[arg(short = 'd', long, default_value = "3")]
     pub days: u32,
 }
 
@@ -212,10 +254,10 @@ pub enum SubstanceCommands {
     /// Search substances
     Search(SubstanceSearchArgs),
 
-    /// Show substance details
+    /// Show substance details (not yet implemented)
     Show(SubstanceShowArgs),
 
-    /// Add a custom substance
+    /// Add a custom substance (not yet implemented)
     Add(SubstanceAddArgs),
 
     /// Seed database with initial substances
@@ -225,7 +267,7 @@ pub enum SubstanceCommands {
 #[derive(Args, Debug)]
 pub struct SubstanceListArgs {
     /// Filter by category
-    #[arg(short, long)]
+    #[arg(short = 'c', long)]
     pub category: Option<String>,
 }
 
@@ -252,7 +294,7 @@ pub struct SubstanceAddArgs {
 #[derive(Args, Debug)]
 pub struct SubstanceSeedArgs {
     /// Path to YAML seed file (default: data/seeds/substances.yaml)
-    #[arg(short, long, default_value = "data/seeds/substances.yaml")]
+    #[arg(short = 'p', long, default_value = "data/seeds/substances.yaml")]
     pub path: PathBuf,
 }
 
@@ -261,10 +303,10 @@ pub enum StackCommands {
     /// List defined stacks
     List,
 
-    /// Show stack contents
+    /// Show stack contents (not yet implemented)
     Show(StackShowArgs),
 
-    /// Create stack from YAML file
+    /// Create stack from YAML file (not yet implemented)
     Create(StackCreateArgs),
 }
 
@@ -283,10 +325,10 @@ pub enum ProtocolCommands {
     /// List available protocols
     List,
 
-    /// Test a protocol with simulated data
+    /// Test a protocol with simulated data (not yet implemented)
     Test(ProtocolTestArgs),
 
-    /// Show protocol details
+    /// Show protocol details (not yet implemented)
     Show(ProtocolShowArgs),
 }
 
@@ -303,14 +345,14 @@ pub struct ProtocolShowArgs {
 #[derive(Args, Debug)]
 pub struct ReportArgs {
     /// Days to include
-    #[arg(short, long, default_value = "7")]
+    #[arg(short = 'd', long, default_value = "7")]
     pub days: u32,
 
-    /// Output format
-    #[arg(short, long, default_value = "markdown")]
+    /// Output format (markdown, json, csv)
+    #[arg(short = 'f', long, default_value = "markdown")]
     pub format: String,
 
     /// Output file (default: stdout)
-    #[arg(short, long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
 }
