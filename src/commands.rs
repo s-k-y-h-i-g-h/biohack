@@ -824,16 +824,32 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
 /// Parse a dose string (e.g., "400mg", "2.5g", "10ml", "50mcg") into milligrams as f64
 fn parse_dose(s: &str) -> Result<f64> {
     let s = s.trim().to_lowercase();
+    if s.is_empty() {
+        anyhow::bail!("Dose cannot be empty. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)");
+    }
     if s.ends_with("mcg") || s.ends_with("µg") {
-        Ok(s.trim_end_matches("mcg").trim_end_matches("µg").parse::<f64>()? / 1000.0)
+        let num_part = s.trim_end_matches("mcg").trim_end_matches("µg");
+        num_part.parse::<f64>()
+            .map(|v| v / 1000.0)
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '50mcg' or '50µg'", s))
     } else if s.ends_with("mg") {
-        Ok(s.trim_end_matches("mg").parse()?)
+        let num_part = s.trim_end_matches("mg");
+        num_part.parse::<f64>()
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '400mg'", s))
     } else if s.ends_with("g") {
-        Ok(s.trim_end_matches("g").parse::<f64>()? * 1000.0)
+        let num_part = s.trim_end_matches("g");
+        num_part.parse::<f64>()
+            .map(|v| v * 1000.0)
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '2.5g'", s))
     } else if s.ends_with("ml") {
-        Ok(s.trim_end_matches("ml").parse::<f64>()? * 1000.0) // assume 1g/ml for liquids
+        let num_part = s.trim_end_matches("ml");
+        num_part.parse::<f64>()
+            .map(|v| v * 1000.0)
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '10ml'", s))
     } else {
-        Ok(s.parse()?) // assume mg
+        // Assume mg for bare numbers
+        s.parse::<f64>()
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)", s))
     }
 }
 
@@ -849,7 +865,9 @@ fn format_dose(mg: f64) -> String {
 /// Parse an optional timestamp string into a DateTime<Utc>
 fn parse_time(s: &Option<String>) -> Result<DateTime<Utc>> {
     Ok(match s {
-        Some(t) => DateTime::parse_from_rfc3339(t)?.with_timezone(&Utc),
+        Some(t) => DateTime::parse_from_rfc3339(t)
+            .map(|dt| dt.with_timezone(&Utc))
+            .map_err(|_| anyhow::anyhow!("Invalid timestamp format: '{}'. Use ISO 8601 format like '2024-01-15T10:30:00Z' or '2024-01-15'", t))?,
         None => Utc::now(),
     })
 }
