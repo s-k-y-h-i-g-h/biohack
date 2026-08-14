@@ -58,7 +58,7 @@
 - [ ] Task 24: Set up GitHub Actions CI
 - [ ] Task 25: Property-based tests for protocol evaluation
 
-**Checkpoint: Tests & CI** ���
+**Checkpoint: Tests & CI** �������
 
 ## Phase 7: Polish & Documentation (v1.0)
 - [ ] Task 26: Create README.md with installation, usage examples, command reference
@@ -67,14 +67,35 @@
 - [ ] Task 29: Push to GitHub (https://github.com/s-k-y-h-i-g-h/biohack)
 - [ ] Task 30: Set up GitHub Actions CI
 
-**Checkpoint: Complete** ���
+**Checkpoint: Complete** �������
 
-## Phase 8: v1.1 Features (Planned)
-- [ ] Task 31: Food database integration (USDA FoodData Central)
-- [ ] Task 32: Nutrient tracking (macros, micros, deficiencies/excesses)
-- [ ] Task 33: Protocol YAML versioning and migration system
-- [ ] Task 34: Health platform import (Google Health, Samsung Health)
-- [ ] Task 35: Predefined meal logging
-- [ ] Task 36: TUI support via ratatui
+## Phase 8: User Documentation (v1.0)
+- [ ] Task 31: Create docs/user-guide.md (installation, quick start, workflow)
+- [ ] Task 32: Create docs/command-reference.md (all commands with examples)
+- [ ] Task 33: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
+- [ ] Task 34: Create docs/configuration.md (database path, config file, env vars)
+- [ ] Task 35: Create docs/troubleshooting.md (common issues, FAQ)
+- [ ] Task 36: Link all docs from README.md
 
-**Checkpoint: v1.1 Complete** ���
+**Checkpoint: User Documentation** �������
+
+## Phase 9: CLI Integration Tests (v1.0)
+- [ ] Task 37: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
+- [ ] Task 38: Integration tests for `biohack log vitals` (all vitals combos, validation)
+- [ ] Task 39: Integration tests for `biohack log food` (units, amounts, edge cases)
+- [ ] Task 40: Integration tests for `biohack substance seed/list/show/search`
+- [ ] Task 41: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
+- [ ] Task 42: Integration tests for error handling (missing args, invalid inputs, DB errors)
+- [ ] Task 43: Add tests to CI pipeline
+
+**Checkpoint: CLI Integration Tests** �������
+
+## Phase 10: v1.1 Features (Planned)
+- [ ] Task 44: Food database integration (USDA FoodData Central)
+- [ ] Task 45: Nutrient tracking (macros, micros, deficiencies/excesses)
+- [ ] Task 46: Protocol YAML versioning and migration system
+- [ ] Task 47: Health platform import (Google Health, Samsung Health)
+- [ ] Task 48: Predefined meal logging
+- [ ] Task 49: TUI support via ratatui
+
+**Checkpoint: v1.1 Complete** �������
