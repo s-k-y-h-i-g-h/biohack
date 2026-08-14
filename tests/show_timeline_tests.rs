@@ -1,11 +1,9 @@
 //! Tests for show timeline command
 
 use biohack::db::Database;
-use biohack::models::{SubstanceLog, VitalsLog, FoodLog, Substance, SubstanceCategory};
-use biohack::cli::{ShowCommands, ShowTimelineArgs};
-use chrono::{Utc, Duration};
-use uuid::Uuid;
+use chrono::{Duration, Utc};
 use tempfile::tempdir;
+use uuid::Uuid;
 
 #[cfg(test)]
 mod show_timeline_tests {
@@ -16,11 +14,9 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path)).unwrap();
-        
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         // Should not error, just show empty
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
@@ -31,7 +27,7 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path.clone())).unwrap();
-        
+
         // Insert a substance log
         let log = biohack::models::SubstanceLog {
             id: Uuid::new_v4(),
@@ -43,13 +39,11 @@ mod show_timeline_tests {
             notes: Some("Morning coffee".to_string()),
             category: Some("stimulant".to_string()),
         };
-        
+
         db.insert_substance_log(&log).unwrap();
-        
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
     }
@@ -59,7 +53,7 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path.clone())).unwrap();
-        
+
         // Insert a vitals log
         let log = biohack::models::VitalsLog {
             id: Uuid::new_v4(),
@@ -73,13 +67,11 @@ mod show_timeline_tests {
             timestamp: Utc::now() - Duration::hours(2),
             notes: Some("Morning check".to_string()),
         };
-        
+
         db.insert_vitals_log(&log).unwrap();
-        
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
     }
@@ -89,7 +81,7 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path.clone())).unwrap();
-        
+
         // Insert a food log
         let log = biohack::models::FoodLog {
             id: Uuid::new_v4(),
@@ -99,13 +91,11 @@ mod show_timeline_tests {
             timestamp: Utc::now() - Duration::hours(2),
             notes: Some("Lunch".to_string()),
         };
-        
+
         db.insert_food_log(&log).unwrap();
-        
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
     }
@@ -115,10 +105,10 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path.clone())).unwrap();
-        
+
         // Insert logs at different times - we want to verify chronological order
         // The timeline should show them sorted by timestamp (most recent first)
-        
+
         // 3 hours ago - substance
         let sub_log = biohack::models::SubstanceLog {
             id: Uuid::new_v4(),
@@ -130,7 +120,7 @@ mod show_timeline_tests {
             notes: Some("Coffee".to_string()),
             category: Some("stimulant".to_string()),
         };
-        
+
         // 2 hours ago - vitals
         let vitals_log = biohack::models::VitalsLog {
             id: Uuid::new_v4(),
@@ -144,7 +134,7 @@ mod show_timeline_tests {
             timestamp: Utc::now() - Duration::hours(2),
             notes: Some("Check".to_string()),
         };
-        
+
         // 1 hour ago - food
         let food_log = biohack::models::FoodLog {
             id: Uuid::new_v4(),
@@ -154,15 +144,13 @@ mod show_timeline_tests {
             timestamp: Utc::now() - Duration::hours(1),
             notes: Some("Snack".to_string()),
         };
-        
+
         db.insert_substance_log(&sub_log).unwrap();
         db.insert_vitals_log(&vitals_log).unwrap();
         db.insert_food_log(&food_log).unwrap();
-        
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
     }
@@ -172,7 +160,7 @@ mod show_timeline_tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
         let db = Database::new(Some(db_path.clone())).unwrap();
-        
+
         // Old log (10 days ago)
         let old_sub = biohack::models::SubstanceLog {
             id: Uuid::new_v4(),
@@ -185,7 +173,7 @@ mod show_timeline_tests {
             category: None,
         };
         db.insert_substance_log(&old_sub).unwrap();
-        
+
         // Recent log (1 hour ago)
         let recent_vitals = biohack::models::VitalsLog {
             id: Uuid::new_v4(),
@@ -200,12 +188,10 @@ mod show_timeline_tests {
             notes: Some("Recent".to_string()),
         };
         db.insert_vitals_log(&recent_vitals).unwrap();
-        
+
         // Query with 3 days - should only get recent
-        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs {
-            days: 3,
-        });
-        
+        let args = biohack::cli::ShowCommands::Timeline(biohack::cli::ShowTimelineArgs { days: 3 });
+
         let result = biohack::commands::handle_show_timeline(&db, &args, false);
         assert!(result.is_ok());
     }

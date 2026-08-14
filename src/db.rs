@@ -4,7 +4,6 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use sled::{Config, Db, Tree};
 use std::path::PathBuf;
-use uuid::Uuid;
 
 use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
 
@@ -102,7 +101,10 @@ impl Database {
             let (_, value) = item?;
             let substance: Substance = self.deserialize(&value)?;
             if substance.name.eq_ignore_ascii_case(name)
-                || substance.aliases.iter().any(|a| a.eq_ignore_ascii_case(name))
+                || substance
+                    .aliases
+                    .iter()
+                    .any(|a| a.eq_ignore_ascii_case(name))
             {
                 return Ok(Some(substance));
             }
@@ -118,7 +120,10 @@ impl Database {
             let (_, value) = item?;
             let substance: Substance = self.deserialize(&value)?;
             if substance.name.to_lowercase().contains(&query_lower)
-                || substance.aliases.iter().any(|a| a.to_lowercase().contains(&query_lower))
+                || substance
+                    .aliases
+                    .iter()
+                    .any(|a| a.to_lowercase().contains(&query_lower))
             {
                 results.push(substance);
             }
@@ -155,7 +160,11 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_recent_substance_logs(&self, days: u32, name_filter: Option<&str>) -> Result<Vec<SubstanceLog>> {
+    pub fn get_recent_substance_logs(
+        &self,
+        days: u32,
+        name_filter: Option<&str>,
+    ) -> Result<Vec<SubstanceLog>> {
         let since = Utc::now() - chrono::Duration::days(days as i64);
         let mut results = Vec::new();
 
@@ -166,7 +175,11 @@ impl Database {
                 break; // Logs are stored in chronological order
             }
             if let Some(name) = name_filter {
-                if log.substance_name.to_lowercase().contains(&name.to_lowercase()) {
+                if log
+                    .substance_name
+                    .to_lowercase()
+                    .contains(&name.to_lowercase())
+                {
                     results.push(log);
                 }
             } else {
@@ -244,7 +257,11 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_recent_food_logs(&self, days: u32, name_filter: Option<&str>) -> Result<Vec<FoodLog>> {
+    pub fn get_recent_food_logs(
+        &self,
+        days: u32,
+        name_filter: Option<&str>,
+    ) -> Result<Vec<FoodLog>> {
         let since = Utc::now() - chrono::Duration::days(days as i64);
         let mut results = Vec::new();
 
@@ -366,7 +383,7 @@ impl Database {
         }
 
         // Sort by timestamp ascending (oldest first for report)
-        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        results.sort_by_key(|a| a.timestamp);
         Ok(results)
     }
 
@@ -385,7 +402,7 @@ impl Database {
         }
 
         // Sort by timestamp ascending (oldest first for report)
-        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        results.sort_by_key(|a| a.timestamp);
         Ok(results)
     }
 
@@ -396,15 +413,15 @@ impl Database {
 
         for item in self.substance_logs.iter().rev() {
             let (_, value) = item?;
-            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
-                if log.timestamp >= since {
-                    results.push(log);
-                }
+            if let Ok(log) = self.deserialize::<FoodLog>(&value)
+                && log.timestamp >= since
+            {
+                results.push(log);
             }
         }
 
         // Sort by timestamp ascending (oldest first for report)
-        results.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+        results.sort_by_key(|a| a.timestamp);
         Ok(results)
     }
 }

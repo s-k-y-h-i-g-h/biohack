@@ -7,11 +7,11 @@ mod db;
 mod models;
 mod protocols;
 
-use anyhow::Result;
-use clap::Parser;
 use crate::cli::{
     Cli, Commands, LogCommands, ProtocolCommands, ShowCommands, StackCommands, SubstanceCommands,
 };
+use anyhow::Result;
+use clap::Parser;
 use owo_colors::OwoColorize;
 
 fn main() -> Result<()> {
@@ -22,16 +22,16 @@ fn main() -> Result<()> {
         Commands::Init => commands::handle_init(&db)?,
 
         Commands::Log(cmd) => match cmd {
-            LogCommands::Substance(ref args) => {
+            LogCommands::Substance(ref _args) => {
                 commands::handle_log_substance(&db, &cmd, cli.no_color)?
             }
-            LogCommands::Vitals(ref args) => {
+            LogCommands::Vitals(ref _args) => {
                 commands::handle_log_vitals(&db, &cmd, cli.no_color)?
             }
-            LogCommands::Stack(ref args) => {
+            LogCommands::Stack(ref _args) => {
                 commands::handle_log_stack(&db, &cmd, cli.no_color)?
             }
-            LogCommands::Food(ref args) => {
+            LogCommands::Food(ref _args) => {
                 commands::handle_log_food(&db, &cmd, cli.no_color)?
             }
         },
@@ -49,19 +49,19 @@ fn main() -> Result<()> {
         },
 
         Commands::Substance(cmd) => match cmd {
-            SubstanceCommands::List(ref args) => {
+            SubstanceCommands::List(ref _args) => {
                 commands::handle_substance_list(&db, &cmd, cli.no_color)?
             }
-            SubstanceCommands::Search(ref args) => {
+            SubstanceCommands::Search(ref _args) => {
                 commands::handle_substance_search(&db, &cmd, cli.no_color)?
             }
-            SubstanceCommands::Show(ref args) => {
+            SubstanceCommands::Show(ref _args) => {
                 commands::handle_substance_show(&db, &cmd, cli.no_color)?
             }
-            SubstanceCommands::Add(ref args) => {
+            SubstanceCommands::Add(_args) => {
                 println!("{}", "Not yet implemented".yellow());
             }
-            SubstanceCommands::Seed(ref args) => {
+            SubstanceCommands::Seed(ref _args) => {
                 commands::handle_substance_seed(&db, &cmd, cli.no_color)?
             }
         },
@@ -74,7 +74,9 @@ fn main() -> Result<()> {
 
         Commands::Protocol(cmd) => match cmd {
             ProtocolCommands::List => commands::handle_protocol_list(&db, &cmd, cli.no_color)?,
-            ProtocolCommands::Test { .. } => commands::handle_protocol_test(&db, &cmd, cli.no_color)?,
+            ProtocolCommands::Test { .. } => {
+                commands::handle_protocol_test(&db, &cmd, cli.no_color)?
+            }
             ProtocolCommands::Show { .. } => {
                 println!("{}", "Not yet implemented".yellow());
             }

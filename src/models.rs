@@ -130,7 +130,10 @@ impl std::str::FromStr for Schedule {
             "morning" => Self::Morning,
             "evening" => Self::Evening,
             "prn" => Self::Prn,
-            other => anyhow::bail!("Invalid schedule: {}. Use 'morning', 'evening', or 'prn'", other),
+            other => anyhow::bail!(
+                "Invalid schedule: {}. Use 'morning', 'evening', or 'prn'",
+                other
+            ),
         })
     }
 }

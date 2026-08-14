@@ -1,24 +1,27 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use comfy_table::{Cell, Color, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
+use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use owo_colors::OwoColorize;
 use serde_yaml;
-use std::fs;
 use std::io::Write;
 use uuid::Uuid;
 
 use crate::cli::*;
-use crate::db::{Database, ReportSummary};
-use crate::models::{FoodLog, Schedule, Stack, StackItem, Substance, SubstanceLog, VitalsLog};
+use crate::db::Database;
+use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
 
 /// Initialize the database
-pub fn handle_init(db: &Database) -> Result<()> {
+pub fn handle_init(_db: &Database) -> Result<()> {
     println!("{}", "���� Database initialized".green());
     Ok(())
 }
 
 /// Seed the database with initial substances from a YAML file
-pub fn handle_substance_seed(db: &Database, args: &SubstanceCommands, _no_color: bool) -> Result<()> {
+pub fn handle_substance_seed(
+    db: &Database,
+    args: &SubstanceCommands,
+    _no_color: bool,
+) -> Result<()> {
     if let SubstanceCommands::Seed(args) = args {
         let content = std::fs::read_to_string(&args.path)?;
         let mut substances: Vec<Substance> = serde_yaml::from_str(&content)?;
@@ -29,13 +32,22 @@ pub fn handle_substance_seed(db: &Database, args: &SubstanceCommands, _no_color:
             db.insert_substance(substance)?;
             println!("{}", format!("���� Seeded: {}", substance.name).green());
         }
-        println!("{}", format!("���� Seeded {} substances", substances.len()).green().bold());
+        println!(
+            "{}",
+            format!("���� Seeded {} substances", substances.len())
+                .green()
+                .bold()
+        );
     }
     Ok(())
 }
 
 /// List substances in the database
-pub fn handle_substance_list(db: &Database, args: &SubstanceCommands, _no_color: bool) -> Result<()> {
+pub fn handle_substance_list(
+    db: &Database,
+    args: &SubstanceCommands,
+    _no_color: bool,
+) -> Result<()> {
     if let SubstanceCommands::List(args) = args {
         let substances = db.list_substances(args.category.as_deref())?;
         if substances.is_empty() {
@@ -44,13 +56,31 @@ pub fn handle_substance_list(db: &Database, args: &SubstanceCommands, _no_color:
         }
 
         let mut table = Table::new();
-        table.load_preset(UTF8_FULL).apply_modifier(UTF8_ROUND_CORNERS);
-        table.set_header(vec!["Name", "Category", "Typical Dose", "Half-life", "Contraindications"]);
+        table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS);
+        table.set_header(vec![
+            "Name",
+            "Category",
+            "Typical Dose",
+            "Half-life",
+            "Contraindications",
+        ]);
 
         for s in substances {
-            let typical = s.typical_dose_mg.map(|v| format_dose(v)).unwrap_or_else(|| "—".to_string());
-            let half_life = s.half_life_hours.map(|h| format!("{:.1}h", h)).unwrap_or_else(|| "—".to_string());
-            let contra = if s.contraindications.is_empty() { "—".to_string() } else { s.contraindications.join(", ") };
+            let typical = s
+                .typical_dose_mg
+                .map(|v| format_dose(v))
+                .unwrap_or_else(|| "—".to_string());
+            let half_life = s
+                .half_life_hours
+                .map(|h| format!("{:.1}h", h))
+                .unwrap_or_else(|| "—".to_string());
+            let contra = if s.contraindications.is_empty() {
+                "—".to_string()
+            } else {
+                s.contraindications.join(", ")
+            };
 
             table.add_row(vec![
                 Cell::new(&s.name),
@@ -71,10 +101,12 @@ pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) 
     if let LogCommands::Substance(args) = args {
         let dose_mg = parse_dose(&args.dose)?;
         let timestamp = parse_time(&args.time)?;
-        
+
         // Find substance ID from name
         let substance_option = db.get_substance_by_name(&args.name)?;
-        let substance = substance_option.ok_or_else(|| anyhow::anyhow!("Substance not found in database. Use 'biohack substance seed' first."))?;
+        let substance = substance_option.ok_or_else(|| {
+            anyhow::anyhow!("Substance not found in database. Use 'biohack substance seed' first.")
+        })?;
         let substance_id = substance.id;
 
         // Create and insert substance log
@@ -88,16 +120,19 @@ pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) 
             notes: args.notes.clone(),
             category: Some(substance.category.to_string()),
         };
-        
+
         db.insert_substance_log(&log)?;
-        
+
         println!(
             "{}",
             format!(
                 "�������� Logged substance: {} {} {} at {}",
-                args.name, args.dose, args.route,
+                args.name,
+                args.dose,
+                args.route,
                 timestamp.format("%Y-%m-%d %H:%M")
-            ).green()
+            )
+            .green()
         );
         if let Some(n) = &args.notes {
             println!("  Notes: {}", n);
@@ -169,9 +204,12 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             "{}",
             format!(
                 "������� Logged food: {} {} {} at {}",
-                args.amount, args.unit, args.name,
+                args.amount,
+                args.unit,
+                args.name,
                 timestamp.format("%Y-%m-%d %H:%M")
-            ).green()
+            )
+            .green()
         );
         if let Some(n) = &args.notes {
             println!("  Notes: {}", n);
@@ -184,20 +222,29 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
 pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: bool) -> Result<()> {
     if let ShowCommands::Substances(args) = args {
         let logs = db.get_recent_substance_logs(args.days, args.name.as_deref())?;
-        
+
         if logs.is_empty() {
             println!("{}", "No substance logs found".yellow());
             return Ok(());
         }
 
         let mut table = Table::new();
-        table.load_preset(UTF8_FULL).apply_modifier(UTF8_ROUND_CORNERS);
-        table.set_header(vec!["Time", "Substance", "Dose", "Route", "Category", "Notes"]);
+        table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS);
+        table.set_header(vec![
+            "Time",
+            "Substance",
+            "Dose",
+            "Route",
+            "Category",
+            "Notes",
+        ]);
 
         for log in logs {
             let category = log.category.as_deref().unwrap_or("—");
             let notes = log.notes.as_deref().unwrap_or("—");
-            
+
             table.add_row(vec![
                 Cell::new(&log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(&log.substance_name),
@@ -240,13 +287,34 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
         ]);
 
         for log in logs {
-            let hr = log.heart_rate.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let sbp = log.sbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let dbp = log.dbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let temp = log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
-            let spo2 = log.spo2.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let hrv = log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let weight = log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let hr = log
+                .heart_rate
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let sbp = log
+                .sbp
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let dbp = log
+                .dbp
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let temp = log
+                .temperature_c
+                .map(|v| format!("{:.1}", v))
+                .unwrap_or_else(|| "—".to_string());
+            let spo2 = log
+                .spo2
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let hrv = log
+                .hrv_rmssd
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let weight = log
+                .weight_kg
+                .map(|v| format!("{:.1}", v))
+                .unwrap_or_else(|| "—".to_string());
             let notes = log.notes.as_deref().unwrap_or("—");
 
             table.add_row(vec![
@@ -281,30 +349,42 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
         table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
-        table.set_header(vec![
-            "Time",
-            "Type",
-            "Details",
-            "Notes",
-        ]);
+        table.set_header(vec!["Time", "Type", "Details", "Notes"]);
 
         for entry in entries {
             let timestamp_str = entry.timestamp().format("%Y-%m-%d %H:%M").to_string();
             let (entry_type, details, notes) = match entry {
                 crate::db::TimelineEntry::Substance(log) => (
                     "Substance".to_string(),
-                    format!("{} {}mg {}", log.substance_name, log.dose_mg as u64, log.route),
+                    format!(
+                        "{} {}mg {}",
+                        log.substance_name, log.dose_mg as u64, log.route
+                    ),
                     log.notes.as_deref().unwrap_or("—").to_string(),
                 ),
                 crate::db::TimelineEntry::Vitals(log) => {
                     let mut parts = Vec::new();
-                    if let Some(hr) = log.heart_rate { parts.push(format!("HR:{}", hr)); }
-                    if let Some(sbp) = log.sbp { parts.push(format!("SBP:{}", sbp)); }
-                    if let Some(dbp) = log.dbp { parts.push(format!("DBP:{}", dbp)); }
-                    if let Some(temp) = log.temperature_c { parts.push(format!("Temp:{:.1}°C", temp)); }
-                    if let Some(spo2) = log.spo2 { parts.push(format!("SpO2:{}%", spo2)); }
-                    if let Some(hrv) = log.hrv_rmssd { parts.push(format!("HRV:{}ms", hrv)); }
-                    if let Some(weight) = log.weight_kg { parts.push(format!("W:{:.1}kg", weight)); }
+                    if let Some(hr) = log.heart_rate {
+                        parts.push(format!("HR:{}", hr));
+                    }
+                    if let Some(sbp) = log.sbp {
+                        parts.push(format!("SBP:{}", sbp));
+                    }
+                    if let Some(dbp) = log.dbp {
+                        parts.push(format!("DBP:{}", dbp));
+                    }
+                    if let Some(temp) = log.temperature_c {
+                        parts.push(format!("Temp:{:.1}°C", temp));
+                    }
+                    if let Some(spo2) = log.spo2 {
+                        parts.push(format!("SpO2:{}%", spo2));
+                    }
+                    if let Some(hrv) = log.hrv_rmssd {
+                        parts.push(format!("HRV:{}ms", hrv));
+                    }
+                    if let Some(weight) = log.weight_kg {
+                        parts.push(format!("W:{:.1}kg", weight));
+                    }
                     (
                         "Vitals".to_string(),
                         parts.join(" "),
@@ -331,12 +411,20 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
     Ok(())
 }
 
-pub fn handle_substance_search(_db: &Database, _args: &SubstanceCommands, _no_color: bool) -> Result<()> {
+pub fn handle_substance_search(
+    _db: &Database,
+    _args: &SubstanceCommands,
+    _no_color: bool,
+) -> Result<()> {
     println!("{}", "Not yet implemented: search substances".yellow());
     Ok(())
 }
 
-pub fn handle_substance_show(_db: &Database, _args: &SubstanceCommands, _no_color: bool) -> Result<()> {
+pub fn handle_substance_show(
+    _db: &Database,
+    _args: &SubstanceCommands,
+    _no_color: bool,
+) -> Result<()> {
     println!("{}", "Not yet implemented: show substance details".yellow());
     Ok(())
 }
@@ -345,7 +433,7 @@ pub fn handle_substance_show(_db: &Database, _args: &SubstanceCommands, _no_colo
 pub fn handle_stack_create(db: &Database, args: &StackCommands, _no_color: bool) -> Result<()> {
     if let StackCommands::Create(args) = args {
         let content = std::fs::read_to_string(&args.path)?;
-        let mut stack: Stack = serde_yaml::from_str(&content)?;
+        let stack: Stack = serde_yaml::from_str(&content)?;
 
         // Validate each substance exists in the database
         for item in &stack.items {
@@ -368,7 +456,11 @@ pub fn handle_stack_create(db: &Database, args: &StackCommands, _no_color: bool)
         }
         println!("  Items: {}", stack.items.len());
         for item in &stack.items {
-            let schedule_str = item.schedule.as_ref().map(|s| s.to_string()).unwrap_or_else(|| "unscheduled".to_string());
+            let schedule_str = item
+                .schedule
+                .as_ref()
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "unscheduled".to_string());
             println!(
                 "  - {} {} {} ({})",
                 item.substance_name,
@@ -501,7 +593,9 @@ pub fn handle_log_stack(db: &Database, args: &LogCommands, _no_color: bool) -> R
                 "  {}",
                 format!(
                     "��� {} {} {}",
-                    item.substance_name, item.dose, item.route.as_deref().unwrap_or("oral")
+                    item.substance_name,
+                    item.dose,
+                    item.route.as_deref().unwrap_or("oral")
                 )
                 .green()
             );
@@ -528,23 +622,27 @@ pub fn handle_check(_db: &Database, _no_color: bool) -> Result<()> {
 }
 
 /// Protocol list (placeholder)
-pub fn handle_protocol_list(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
+pub fn handle_protocol_list(
+    _db: &Database,
+    _args: &ProtocolCommands,
+    _no_color: bool,
+) -> Result<()> {
     println!("{}", "Not yet implemented: list protocols".yellow());
     Ok(())
 }
 
 /// Protocol test (placeholder)
-pub fn handle_protocol_test(_db: &Database, _args: &ProtocolCommands, _no_color: bool) -> Result<()> {
+pub fn handle_protocol_test(
+    _db: &Database,
+    _args: &ProtocolCommands,
+    _no_color: bool,
+) -> Result<()> {
     println!("{}", "Not yet implemented: test protocol".yellow());
     Ok(())
 }
 
 /// Generate markdown report
-fn generate_markdown_report(
-    db: &Database,
-    days: u32,
-    format: &str,
-) -> Result<String> {
+fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<String> {
     let summary = db.get_report_summary(days)?;
     let substance_logs = db.get_recent_substance_logs_detailed(days)?;
     let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
@@ -557,14 +655,27 @@ fn generate_markdown_report(
 
     // Header
     report.push_str(&format!("# Biohack Health Report\n\n"));
-    report.push_str(&format!("**Generated:** {}\n", now.format("%Y-%m-%d %H:%M UTC")));
-    report.push_str(&format!("**Period:** {} to {} ({} days)\n\n", 
-        date_range_start.format("%Y-%m-%d"), now.format("%Y-%m-%d"), days));
+    report.push_str(&format!(
+        "**Generated:** {}\n",
+        now.format("%Y-%m-%d %H:%M UTC")
+    ));
+    report.push_str(&format!(
+        "**Period:** {} to {} ({} days)\n\n",
+        date_range_start.format("%Y-%m-%d"),
+        now.format("%Y-%m-%d"),
+        days
+    ));
 
     // Summary
     report.push_str("## Summary\n\n");
-    report.push_str(&format!("- **Substance Logs:** {}\n", summary.substance_logs));
-    report.push_str(&format!("- **Unique Substances:** {}\n", summary.unique_substances));
+    report.push_str(&format!(
+        "- **Substance Logs:** {}\n",
+        summary.substance_logs
+    ));
+    report.push_str(&format!(
+        "- **Unique Substances:** {}\n",
+        summary.unique_substances
+    ));
     report.push_str(&format!("- **Vitals Logs:** {}\n", summary.vitals_logs));
     report.push_str(&format!("- **Food Logs:** {}\n", summary.food_logs));
     report.push_str(&format!("- **Defined Stacks:** {}\n\n", stacks.len()));
@@ -578,7 +689,11 @@ fn generate_markdown_report(
                 report.push_str(&format!("*{desc}*\n\n"));
             }
             for item in &stack.items {
-                let schedule = item.schedule.as_ref().map(|s| format!("[{}] ", s)).unwrap_or_default();
+                let schedule = item
+                    .schedule
+                    .as_ref()
+                    .map(|s| format!("[{}] ", s))
+                    .unwrap_or_default();
                 let route = item.route.as_deref().unwrap_or("oral");
                 report.push_str(&format!(
                     "- {schedule}{dose} {route} — {name}\n",
@@ -599,7 +714,8 @@ fn generate_markdown_report(
             let category = log.category.as_deref().unwrap_or("—");
             let notes = log.notes.as_deref().unwrap_or("—");
             let dose_str = format_dose(log.dose_mg);
-            report.push_str(&format!("| {} | {} | {} | {} | {} | {} |\n",
+            report.push_str(&format!(
+                "| {} | {} | {} | {} | {} | {} |\n",
                 log.timestamp.format("%Y-%m-%d %H:%M"),
                 log.substance_name,
                 dose_str,
@@ -617,18 +733,46 @@ fn generate_markdown_report(
         report.push_str("| Date & Time | HR | SBP | DBP | Temp (°C) | SpO2 (%) | HRV (ms) | Weight (kg) | Notes |\n");
         report.push_str("|-------------|----|-----|-----|-----------|----------|----------|-------------|-------|\n");
         for log in &vitals_logs {
-            let hr = log.heart_rate.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let sbp = log.sbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let dbp = log.dbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let temp = log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
-            let spo2 = log.spo2.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let hrv = log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
-            let weight = log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let hr = log
+                .heart_rate
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let sbp = log
+                .sbp
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let dbp = log
+                .dbp
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let temp = log
+                .temperature_c
+                .map(|v| format!("{:.1}", v))
+                .unwrap_or_else(|| "—".to_string());
+            let spo2 = log
+                .spo2
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let hrv = log
+                .hrv_rmssd
+                .map(|v| v.to_string())
+                .unwrap_or_else(|| "—".to_string());
+            let weight = log
+                .weight_kg
+                .map(|v| format!("{:.1}", v))
+                .unwrap_or_else(|| "—".to_string());
             let notes = log.notes.as_deref().unwrap_or("—");
-            
-            report.push_str(&format!("| {} | {} | {} | {} | {} | {} | {} | {} | {} |\n",
+
+            report.push_str(&format!(
+                "| {} | {} | {} | {} | {} | {} | {} | {} | {} |\n",
                 log.timestamp.format("%Y-%m-%d %H:%M"),
-                hr, sbp, dbp, temp, spo2, hrv, weight,
+                hr,
+                sbp,
+                dbp,
+                temp,
+                spo2,
+                hrv,
+                weight,
                 notes.replace('|', "\\|")
             ));
         }
@@ -642,7 +786,8 @@ fn generate_markdown_report(
         report.push_str("|-------------|------|--------|------|-------|\n");
         for log in &food_logs {
             let notes = log.notes.as_deref().unwrap_or("—");
-            report.push_str(&format!("| {} | {} | {} | {} | {} |\n",
+            report.push_str(&format!(
+                "| {} | {} | {} | {} | {} |\n",
                 log.timestamp.format("%Y-%m-%d %H:%M"),
                 log.food_name,
                 log.amount,
@@ -656,18 +801,20 @@ fn generate_markdown_report(
     // Vitals Summary (clinician-friendly)
     if !vitals_logs.is_empty() {
         report.push_str("## Vitals Summary (for Clinician Review)\n\n");
-        
+
         let hr_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.heart_rate).collect();
         let sbp_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.sbp).collect();
         let dbp_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.dbp).collect();
         let temp_vals: Vec<f32> = vitals_logs.iter().filter_map(|l| l.temperature_c).collect();
         let spo2_vals: Vec<u32> = vitals_logs.iter().filter_map(|l| l.spo2).collect();
-        
+
         if !hr_vals.is_empty() {
             let avg_hr = hr_vals.iter().sum::<u32>() as f32 / hr_vals.len() as f32;
             let min_hr = *hr_vals.iter().min().unwrap();
             let max_hr = *hr_vals.iter().max().unwrap();
-            report.push_str(&format!("- **Heart Rate:** avg {avg_hr:.0} bpm (range {min_hr}–{max_hr})\n"));
+            report.push_str(&format!(
+                "- **Heart Rate:** avg {avg_hr:.0} bpm (range {min_hr}–{max_hr})\n"
+            ));
         }
         if !sbp_vals.is_empty() && !dbp_vals.is_empty() {
             let avg_sbp = sbp_vals.iter().sum::<u32>() as f32 / sbp_vals.len() as f32;
@@ -682,7 +829,9 @@ fn generate_markdown_report(
             let avg_temp = temp_vals.iter().sum::<f32>() / temp_vals.len() as f32;
             let min_temp = temp_vals.iter().fold(f32::INFINITY, |a, &b| a.min(b));
             let max_temp = temp_vals.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
-            report.push_str(&format!("- **Temperature:** avg {avg_temp:.1}°C (range {min_temp:.1}–{max_temp:.1})\n"));
+            report.push_str(&format!(
+                "- **Temperature:** avg {avg_temp:.1}°C (range {min_temp:.1}–{max_temp:.1})\n"
+            ));
         }
         if !spo2_vals.is_empty() {
             let min_spo2 = *spo2_vals.iter().min().unwrap();
@@ -701,7 +850,7 @@ fn generate_markdown_report(
         }
         let mut freq_vec: Vec<_> = freq.into_iter().collect();
         freq_vec.sort_by(|a, b| b.1.cmp(&a.1));
-        
+
         report.push_str("| Substance | Log Count |\n");
         report.push_str("|-----------|-----------|\n");
         for (name, count) in freq_vec {
@@ -718,10 +867,7 @@ fn generate_markdown_report(
 }
 
 /// Generate CSV export
-fn generate_csv_report(
-    db: &Database,
-    days: u32,
-) -> Result<String> {
+fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
     let substance_logs = db.get_recent_substance_logs_detailed(days)?;
     let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
     let food_logs = db.get_recent_food_logs_detailed(days)?;
@@ -735,7 +881,8 @@ fn generate_csv_report(
         for log in &substance_logs {
             let category = log.category.as_deref().unwrap_or("");
             let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
-            csv.push_str(&format!("{},{},{},{},{},{}\n",
+            csv.push_str(&format!(
+                "{},{},{},{},{},{}\n",
                 log.timestamp.to_rfc3339(),
                 log.substance_name.replace('"', "\"\""),
                 log.dose_mg,
@@ -753,15 +900,20 @@ fn generate_csv_report(
         csv.push_str("timestamp,heart_rate,sbp,dbp,temperature_c,spo2,hrv_rmssd,weight_kg,notes\n");
         for log in &vitals_logs {
             let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
-            csv.push_str(&format!("{},{},{},{},{},{},{},{},{}\n",
+            csv.push_str(&format!(
+                "{},{},{},{},{},{},{},{},{}\n",
                 log.timestamp.to_rfc3339(),
                 log.heart_rate.map(|v| v.to_string()).unwrap_or_default(),
                 log.sbp.map(|v| v.to_string()).unwrap_or_default(),
                 log.dbp.map(|v| v.to_string()).unwrap_or_default(),
-                log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_default(),
+                log.temperature_c
+                    .map(|v| format!("{:.1}", v))
+                    .unwrap_or_default(),
                 log.spo2.map(|v| v.to_string()).unwrap_or_default(),
                 log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_default(),
-                log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_default(),
+                log.weight_kg
+                    .map(|v| format!("{:.1}", v))
+                    .unwrap_or_default(),
                 notes
             ));
         }
@@ -774,7 +926,8 @@ fn generate_csv_report(
         csv.push_str("timestamp,food_name,amount,unit,notes\n");
         for log in &food_logs {
             let notes = log.notes.as_deref().unwrap_or("").replace('"', "\"\"");
-            csv.push_str(&format!("{},{},{},{},{}\n",
+            csv.push_str(&format!(
+                "{},{},{},{},{}\n",
                 log.timestamp.to_rfc3339(),
                 log.food_name.replace('"', "\"\""),
                 log.amount,
@@ -793,7 +946,10 @@ fn write_report(output: Option<&std::path::Path>, content: &str) -> Result<()> {
     if let Some(path) = output {
         let mut file = std::fs::File::create(path)?;
         file.write_all(content.as_bytes())?;
-        println!("{}", format!("Report written to {}", path.display()).green());
+        println!(
+            "{}",
+            format!("Report written to {}", path.display()).green()
+        );
     } else {
         print!("{content}");
     }
@@ -803,7 +959,7 @@ fn write_report(output: Option<&std::path::Path>, content: &str) -> Result<()> {
 /// Report generation command handler
 pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Result<()> {
     let format = args.format.to_lowercase();
-    
+
     match format.as_str() {
         "markdown" | "md" => {
             let report = generate_markdown_report(db, args.days, &format)?;
@@ -814,10 +970,13 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
             write_report(args.output.as_deref(), &report)?;
         }
         _ => {
-            anyhow::bail!("Unknown format '{}'. Supported formats: markdown, csv", args.format);
+            anyhow::bail!(
+                "Unknown format '{}'. Supported formats: markdown, csv",
+                args.format
+            );
         }
     }
-    
+
     Ok(())
 }
 
@@ -825,25 +984,33 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
 fn parse_dose(s: &str) -> Result<f64> {
     let s = s.trim().to_lowercase();
     if s.is_empty() {
-        anyhow::bail!("Dose cannot be empty. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)");
+        anyhow::bail!(
+            "Dose cannot be empty. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)"
+        );
     }
     if s.ends_with("mcg") || s.ends_with("µg") {
         let num_part = s.trim_end_matches("mcg").trim_end_matches("µg");
-        num_part.parse::<f64>()
-            .map(|v| v / 1000.0)
-            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '50mcg' or '50µg'", s))
+        num_part.parse::<f64>().map(|v| v / 1000.0).map_err(|_| {
+            anyhow::anyhow!(
+                "Invalid dose format: '{}'. Use format like '50mcg' or '50µg'",
+                s
+            )
+        })
     } else if s.ends_with("mg") {
         let num_part = s.trim_end_matches("mg");
-        num_part.parse::<f64>()
+        num_part
+            .parse::<f64>()
             .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '400mg'", s))
     } else if s.ends_with("g") {
         let num_part = s.trim_end_matches("g");
-        num_part.parse::<f64>()
+        num_part
+            .parse::<f64>()
             .map(|v| v * 1000.0)
             .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '2.5g'", s))
     } else if s.ends_with("ml") {
         let num_part = s.trim_end_matches("ml");
-        num_part.parse::<f64>()
+        num_part
+            .parse::<f64>()
             .map(|v| v * 1000.0)
             .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '10ml'", s))
     } else {

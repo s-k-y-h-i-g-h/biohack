@@ -1,9 +1,8 @@
 //! Protocol engine - deterministic safety rules
 
 use anyhow::Result;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::db::Database;
 use crate::models::{
@@ -30,6 +29,12 @@ pub struct ProtocolEngine {
     pub protocols: Vec<Protocol>,
 }
 
+impl Default for ProtocolEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProtocolEngine {
     pub fn new() -> Self {
         Self {
@@ -37,7 +42,7 @@ impl ProtocolEngine {
         }
     }
 
-    pub fn load_from_db(&mut self, db: &Database) -> Result<()> {
+    pub fn load_from_db(&mut self, _db: &Database) -> Result<()> {
         // TODO: Load from protocols table
         // For now, load from YAML files
         self.load_builtin_protocols()
@@ -106,14 +111,11 @@ impl ProtocolEngine {
         ctx: &ProtocolContext,
         matched: &mut Vec<String>,
     ) {
-        if let ProtocolTriggerType::Atomic = condition.trigger_type {
-            if let (Some(field), Some(op), Some(value)) =
-                (&condition.field, &condition.operator, &condition.value)
-            {
-                if self.check_atomic_condition(field, op, value, ctx) {
-                    matched.push(format!("{} {} {}", field, op, value));
-                }
-            }
+        if let ProtocolTriggerType::Atomic = condition.trigger_type
+            && let (Some(field), Some(op), Some(value)) = (&condition.field, &condition.operator, &condition.value)
+            && self.check_atomic_condition(field, op, value, ctx)
+        {
+            matched.push(format!("{} {} {}", field, op, value));
         }
         for c in &condition.conditions {
             self.collect_matched(c, ctx, matched);
@@ -154,7 +156,7 @@ impl ProtocolEngine {
                 let since = Utc::now() - Duration::hours(hours as i64);
                 ctx.recent_substances.iter().any(|s| {
                     s.timestamp >= since
-                        && s.category.as_ref().map_or(false, |cat| {
+                        && s.category.as_ref().is_some_and(|cat| {
                             Self::compare_string(cat, op, value.as_str().unwrap_or(""))
                         })
                 })

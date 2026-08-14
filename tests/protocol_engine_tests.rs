@@ -1,8 +1,10 @@
 //! Tests for protocol engine
 
-use biohack::protocols::{ProtocolEngine, ProtocolContext};
-use biohack::models::{SubstanceLog, VitalsLog, Protocol, ProtocolCondition, ProtocolTriggerType, ProtocolAction};
-use chrono::{Utc, Duration};
+use biohack::models::{
+    SubstanceLog, VitalsLog,
+};
+use biohack::protocols::{ProtocolContext, ProtocolEngine};
+use chrono::{Duration, Utc};
 use uuid::Uuid;
 
 #[cfg(test)]
@@ -19,9 +21,9 @@ mod protocol_engine_tests {
     fn test_load_builtin_protocols() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         assert_eq!(engine.protocols.len(), 3);
-        
+
         let protocol_ids: Vec<String> = engine.protocols.iter().map(|p| p.id.clone()).collect();
         assert!(protocol_ids.contains(&"stimulant_tachycardia".to_string()));
         assert!(protocol_ids.contains(&"hypertension_urgency".to_string()));
@@ -32,16 +34,16 @@ mod protocol_engine_tests {
     fn test_evaluate_empty_context() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         let ctx = ProtocolContext {
             recent_substances: vec![],
             recent_vitals: vec![],
             current_vitals: None,
         };
-        
+
         let results = engine.evaluate(&ctx);
         assert_eq!(results.len(), 3);
-        
+
         // No protocols should trigger with empty context
         for result in results {
             assert!(!result.triggered);
@@ -53,7 +55,7 @@ mod protocol_engine_tests {
     fn test_stimulant_tachycardia_triggers() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         // Create context with recent stimulant and high HR
         let ctx = ProtocolContext {
             recent_substances: vec![SubstanceLog {
@@ -80,16 +82,16 @@ mod protocol_engine_tests {
                 notes: None,
             }),
         };
-        
+
         let results = engine.evaluate(&ctx);
         let tachycardia_result = results
             .iter()
             .find(|r| r.protocol_id == "stimulant_tachycardia")
             .unwrap();
-        
+
         assert!(tachycardia_result.triggered);
         assert!(!tachycardia_result.actions.is_empty());
-        
+
         // Check that we have the expected action types
         let action_types: Vec<String> = tachycardia_result
             .actions
@@ -105,7 +107,7 @@ mod protocol_engine_tests {
     fn test_hypertension_urgency_triggers() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         let ctx = ProtocolContext {
             recent_substances: vec![],
             recent_vitals: vec![],
@@ -122,13 +124,13 @@ mod protocol_engine_tests {
                 notes: None,
             }),
         };
-        
+
         let results = engine.evaluate(&ctx);
         let hypertension_result = results
             .iter()
             .find(|r| r.protocol_id == "hypertension_urgency")
             .unwrap();
-        
+
         assert!(hypertension_result.triggered);
         assert!(!hypertension_result.actions.is_empty());
     }
@@ -137,7 +139,7 @@ mod protocol_engine_tests {
     fn test_hypertension_urgency_dbp_triggers() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         let ctx = ProtocolContext {
             recent_substances: vec![],
             recent_vitals: vec![],
@@ -154,13 +156,13 @@ mod protocol_engine_tests {
                 notes: None,
             }),
         };
-        
+
         let results = engine.evaluate(&ctx);
         let hypertension_result = results
             .iter()
             .find(|r| r.protocol_id == "hypertension_urgency")
             .unwrap();
-        
+
         assert!(hypertension_result.triggered);
     }
 
@@ -168,7 +170,7 @@ mod protocol_engine_tests {
     fn test_no_trigger_when_no_stimulant_recent() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         let ctx = ProtocolContext {
             recent_substances: vec![SubstanceLog {
                 id: Uuid::new_v4(),
@@ -194,13 +196,13 @@ mod protocol_engine_tests {
                 notes: None,
             }),
         };
-        
+
         let results = engine.evaluate(&ctx);
         let tachycardia_result = results
             .iter()
             .find(|r| r.protocol_id == "stimulant_tachycardia")
             .unwrap();
-        
+
         assert!(!tachycardia_result.triggered);
     }
 
@@ -208,7 +210,7 @@ mod protocol_engine_tests {
     fn test_protocol_actions_have_priority() {
         let mut engine = ProtocolEngine::new();
         engine.load_builtin_protocols().unwrap();
-        
+
         let ctx = ProtocolContext {
             recent_substances: vec![SubstanceLog {
                 id: Uuid::new_v4(),
@@ -234,20 +236,20 @@ mod protocol_engine_tests {
                 notes: None,
             }),
         };
-        
+
         let results = engine.evaluate(&ctx);
         let tachycardia_result = results
             .iter()
             .find(|r| r.protocol_id == "stimulant_tachycardia")
             .unwrap();
-        
+
         assert!(tachycardia_result.triggered);
-        
+
         // Check that actions have priorities
         for action in &tachycardia_result.actions {
             assert!(action.priority > 0);
         }
-        
+
         // Check priorities are in expected order (lower = higher priority)
         let priorities: Vec<u32> = tachycardia_result
             .actions
