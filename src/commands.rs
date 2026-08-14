@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::cli::*;
 use crate::db::Database;
-use crate::models::{Substance, SubstanceLog, VitalsLog};
+use crate::models::{Substance, SubstanceLog, VitalsLog, FoodLog};
 
 /// Initialize the database
 pub fn handle_init(db: &Database) -> Result<()> {
@@ -112,17 +112,34 @@ pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) 
 pub fn handle_log_vitals(db: &Database, args: &LogCommands, _no_color: bool) -> Result<()> {
     if let LogCommands::Vitals(args) = args {
         let timestamp = parse_time(&args.time)?;
+
+        // Create and insert vitals log
+        let log = VitalsLog {
+            id: Uuid::new_v4(),
+            heart_rate: args.hr,
+            sbp: args.sbp,
+            dbp: args.dbp,
+            temperature_c: args.temp,
+            spo2: args.spo2,
+            hrv_rmssd: args.hrv,
+            weight_kg: args.weight,
+            timestamp,
+            notes: args.notes.clone(),
+        };
+
+        db.insert_vitals_log(&log)?;
+
         println!(
             "{}",
             format!(
                 "���� Logged vitals: HR={} SBP={} DBP={} Temp={}°C SpO2={}% HRV={}ms Weight={}kg at {}",
-                args.hr.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
-                args.sbp.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
-                args.dbp.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
-                args.temp.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "-".to_string()),
-                args.spo2.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
-                args.hrv.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
-                args.weight.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "-".to_string()),
+                args.hr.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string()),
+                args.sbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string()),
+                args.dbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string()),
+                args.temp.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string()),
+                args.spo2.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string()),
+                args.hrv.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string()),
+                args.weight.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string()),
                 timestamp.format("%Y-%m-%d %H:%M")
             ).green()
         );
@@ -142,8 +159,20 @@ pub fn handle_log_stack(_db: &Database, _args: &LogCommands, _no_color: bool) ->
 /// Log individual food intake
 pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Result<()> {
     if let LogCommands::Food(args) = args {
-        // For MVP, just log to console; in v1.1 we'll insert into DB with food database lookup
         let timestamp = parse_time(&args.time)?;
+
+        // Create and insert food log
+        let log = FoodLog {
+            id: Uuid::new_v4(),
+            food_name: args.name.clone(),
+            amount: args.amount,
+            unit: args.unit.clone(),
+            timestamp,
+            notes: args.notes.clone(),
+        };
+
+        db.insert_food_log(&log)?;
+
         println!(
             "{}",
             format!(
@@ -192,13 +221,121 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
     Ok(())
 }
 
-pub fn handle_show_vitals(_db: &Database, _args: &ShowCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: show vitals".yellow());
+/// Show recent vitals logs
+pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -> Result<()> {
+    if let ShowCommands::Vitals(args) = args {
+        let logs = db.get_recent_vitals_logs(args.days)?;
+
+        if logs.is_empty() {
+            println!("{}", "No vitals logs found".yellow());
+            return Ok(());
+        }
+
+        let mut table = Table::new();
+        table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS);
+        table.set_header(vec![
+            "Time",
+            "HR",
+            "SBP",
+            "DBP",
+            "Temp (°C)",
+            "SpO2 (%)",
+            "HRV (ms)",
+            "Weight (kg)",
+            "Notes",
+        ]);
+
+        for log in logs {
+            let hr = log.heart_rate.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let sbp = log.sbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let dbp = log.dbp.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let temp = log.temperature_c.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let spo2 = log.spo2.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let hrv = log.hrv_rmssd.map(|v| v.to_string()).unwrap_or_else(|| "—".to_string());
+            let weight = log.weight_kg.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+            let notes = log.notes.as_deref().unwrap_or("—");
+
+            table.add_row(vec![
+                Cell::new(&log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(&hr),
+                Cell::new(&sbp),
+                Cell::new(&dbp),
+                Cell::new(&temp),
+                Cell::new(&spo2),
+                Cell::new(&hrv),
+                Cell::new(&weight),
+                Cell::new(notes),
+            ]);
+        }
+
+        println!("{}", table);
+    }
     Ok(())
 }
 
-pub fn handle_show_timeline(_db: &Database, _args: &ShowCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: show timeline".yellow());
+/// Show combined timeline of all log types
+pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool) -> Result<()> {
+    if let ShowCommands::Timeline(args) = args {
+        let entries = db.get_recent_timeline(args.days)?;
+
+        if entries.is_empty() {
+            println!("{}", "No timeline entries found".yellow());
+            return Ok(());
+        }
+
+        let mut table = Table::new();
+        table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS);
+        table.set_header(vec![
+            "Time",
+            "Type",
+            "Details",
+            "Notes",
+        ]);
+
+        for entry in entries {
+            let timestamp_str = entry.timestamp().format("%Y-%m-%d %H:%M").to_string();
+            let (entry_type, details, notes) = match entry {
+                crate::db::TimelineEntry::Substance(log) => (
+                    "Substance".to_string(),
+                    format!("{} {}mg {}", log.substance_name, log.dose_mg as u64, log.route),
+                    log.notes.as_deref().unwrap_or("—").to_string(),
+                ),
+                crate::db::TimelineEntry::Vitals(log) => {
+                    let mut parts = Vec::new();
+                    if let Some(hr) = log.heart_rate { parts.push(format!("HR:{}", hr)); }
+                    if let Some(sbp) = log.sbp { parts.push(format!("SBP:{}", sbp)); }
+                    if let Some(dbp) = log.dbp { parts.push(format!("DBP:{}", dbp)); }
+                    if let Some(temp) = log.temperature_c { parts.push(format!("Temp:{:.1}°C", temp)); }
+                    if let Some(spo2) = log.spo2 { parts.push(format!("SpO2:{}%", spo2)); }
+                    if let Some(hrv) = log.hrv_rmssd { parts.push(format!("HRV:{}ms", hrv)); }
+                    if let Some(weight) = log.weight_kg { parts.push(format!("W:{:.1}kg", weight)); }
+                    (
+                        "Vitals".to_string(),
+                        parts.join(" "),
+                        log.notes.as_deref().unwrap_or("—").to_string(),
+                    )
+                }
+                crate::db::TimelineEntry::Food(log) => (
+                    "Food".to_string(),
+                    format!("{} {} {}", log.amount, log.unit, log.food_name),
+                    log.notes.as_deref().unwrap_or("—").to_string(),
+                ),
+            };
+
+            table.add_row(vec![
+                Cell::new(&timestamp_str),
+                Cell::new(&entry_type),
+                Cell::new(&details),
+                Cell::new(&notes),
+            ]);
+        }
+
+        println!("{}", table);
+    }
     Ok(())
 }
 

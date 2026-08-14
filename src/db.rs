@@ -6,13 +6,30 @@ use sled::{Config, Db, Tree};
 use std::path::PathBuf;
 use uuid::Uuid;
 
-use crate::models::{Stack, Substance, SubstanceLog, VitalsLog, FoodLog};
+use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
 
 const SUBSTANCES_TREE: &str = "substances";
 const SUBSTANCE_LOGS_TREE: &str = "substance_logs";
 const VITALS_LOGS_TREE: &str = "vitals_logs";
 const STACKS_TREE: &str = "stacks";
 const PROTOCOLS_TREE: &str = "protocols";
+
+#[derive(Debug, Clone)]
+pub enum TimelineEntry {
+    Substance(SubstanceLog),
+    Vitals(VitalsLog),
+    Food(FoodLog),
+}
+
+impl TimelineEntry {
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        match self {
+            TimelineEntry::Substance(log) => log.timestamp,
+            TimelineEntry::Vitals(log) => log.timestamp,
+            TimelineEntry::Food(log) => log.timestamp,
+        }
+    }
+}
 
 pub struct Database {
     db: Db,
@@ -245,6 +262,43 @@ impl Database {
                 results.push(log);
             }
         }
+
+        Ok(results)
+    }
+
+    pub fn get_recent_timeline(&self, days: u32) -> Result<Vec<TimelineEntry>> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut results = Vec::new();
+
+        // Get substance logs
+        for item in self.substance_logs.iter().rev() {
+            let (_, value) = item?;
+            // Try to deserialize as SubstanceLog first
+            if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(TimelineEntry::Substance(log));
+                }
+            }
+            // Try to deserialize as FoodLog
+            else if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(TimelineEntry::Food(log));
+                }
+            }
+        }
+
+        // Get vitals logs
+        for item in self.vitals_logs.iter().rev() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                if log.timestamp >= since {
+                    results.push(TimelineEntry::Vitals(log));
+                }
+            }
+        }
+
+        // Sort by timestamp descending (most recent first)
+        results.sort_by(|a, b| b.timestamp().cmp(&a.timestamp()));
 
         Ok(results)
     }
