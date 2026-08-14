@@ -72,13 +72,10 @@ pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) 
         let timestamp = parse_time(&args.time)?;
         
         // Find substance ID from name
-        let substance = db.get_substance_by_name(&args.name)?;
-        if substance.is_none() {
-            println!("{}", "Substance not found in database. Use 'biohack substance seed' first.".yellow());
-            return Ok(());
-        }
-        let substance_id = substance.unwrap().id;
-        
+        let substance_option = db.get_substance_by_name(&args.name)?;
+        let substance = substance_option.ok_or_else(|| anyhow::anyhow!("Substance not found in database. Use 'biohack substance seed' first."))?;
+        let substance_id = substance.id;
+
         // Create and insert substance log
         let log = SubstanceLog {
             id: Uuid::new_v4(),
@@ -88,7 +85,7 @@ pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) 
             route: args.route.clone(),
             timestamp,
             notes: args.notes.clone(),
-            category: Some(args.route.clone()), // TODO: This should be substance.category, not route
+            category: Some(substance.category.to_string()),
         };
         
         db.insert_substance_log(&log)?;
