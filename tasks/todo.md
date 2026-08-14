@@ -102,13 +102,13 @@
 **Checkpoint: User Documentation** ����������������� ���������������
 
 ## Phase 11: CLI Integration Tests (v1.0)
-- [ ] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
-- [ ] Task 40: Integration tests for `biohack log vitals` (all vitals combos, validation)
-- [ ] Task 41: Integration tests for `biohack log food` (units, amounts, edge cases)
-- [ ] Task 42: Integration tests for `biohack substance seed/list/show/search`
-- [ ] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
-- [ ] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
-- [ ] Task 45: Add tests to CI pipeline
+- [x] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
+- [x] Task 40: Integration tests for `biohack log vitals` (all vitals combos, validation)
+- [x] Task 41: Integration tests for `biohack log food` (units, amounts, edge cases)
+- [x] Task 42: Integration tests for `biohack substance seed/list/show/search`
+- [x] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
+- [x] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
+- [x] Task 45: Add tests to CI pipeline
 
 **Checkpoint: CLI Integration Tests** ����������������� ���������������
 
