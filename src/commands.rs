@@ -12,7 +12,7 @@ use crate::models::{Substance, SubstanceLog, VitalsLog};
 
 /// Initialize the database
 pub fn handle_init(db: &Database) -> Result<()> {
-    println!("{}", "������������ Database initialized".green());
+    println!("{}", "���� Database initialized".green());
     Ok(())
 }
 
@@ -26,9 +26,9 @@ pub fn handle_substance_seed(db: &Database, args: &SubstanceCommands, _no_color:
                 substance.id = Uuid::new_v4();
             }
             db.insert_substance(substance)?;
-            println!("{}", format!("������������������������ Seeded: {}", substance.name).green());
+            println!("{}", format!("���� Seeded: {}", substance.name).green());
         }
-        println!("{}", format!("������������������������ Seeded {} substances", substances.len()).green().bold());
+        println!("{}", format!("���� Seeded {} substances", substances.len()).green().bold());
     }
     Ok(())
 }
@@ -68,13 +68,35 @@ pub fn handle_substance_list(db: &Database, args: &SubstanceCommands, _no_color:
 /// Log a substance intake
 pub fn handle_log_substance(db: &Database, args: &LogCommands, _no_color: bool) -> Result<()> {
     if let LogCommands::Substance(args) = args {
-        // For now, just log to console; in a real impl we'd insert into DB
         let dose_mg = parse_dose(&args.dose)?;
         let timestamp = parse_time(&args.time)?;
+        
+        // Find substance ID from name
+        let substance = db.get_substance_by_name(&args.name)?;
+        if substance.is_none() {
+            println!("{}", "Substance not found in database. Use 'biohack substance seed' first.".yellow());
+            return Ok(());
+        }
+        let substance_id = substance.unwrap().id;
+        
+        // Create and insert substance log
+        let log = SubstanceLog {
+            id: Uuid::new_v4(),
+            substance_id,
+            substance_name: args.name.clone(),
+            dose_mg,
+            route: args.route.clone(),
+            timestamp,
+            notes: args.notes.clone(),
+            category: Some(args.route.clone()), // TODO: This should be substance.category, not route
+        };
+        
+        db.insert_substance_log(&log)?;
+        
         println!(
             "{}",
             format!(
-                "������������ Logged substance: {} {} {} at {}",
+                "�������� Logged substance: {} {} {} at {}",
                 args.name, args.dose, args.route,
                 timestamp.format("%Y-%m-%d %H:%M")
             ).green()
@@ -93,7 +115,7 @@ pub fn handle_log_vitals(db: &Database, args: &LogCommands, _no_color: bool) -> 
         println!(
             "{}",
             format!(
-                "������������ Logged vitals: HR={} SBP={} DBP={} Temp={}°C SpO2={}% HRV={}ms Weight={}kg at {}",
+                "���� Logged vitals: HR={} SBP={} DBP={} Temp={}°C SpO2={}% HRV={}ms Weight={}kg at {}",
                 args.hr.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
                 args.sbp.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
                 args.dbp.map(|v| v.to_string()).unwrap_or_else(|| "-".to_string()),
@@ -125,7 +147,7 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
         println!(
             "{}",
             format!(
-                "������������������������ Logged food: {} {} {} at {}",
+                "������� Logged food: {} {} {} at {}",
                 args.amount, args.unit, args.name,
                 timestamp.format("%Y-%m-%d %H:%M")
             ).green()
@@ -137,8 +159,36 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
     Ok(())
 }
 
-pub fn handle_show_substances(_db: &Database, _args: &ShowCommands, _no_color: bool) -> Result<()> {
-    println!("{}", "Not yet implemented: show substances".yellow());
+/// Show recent substance logs
+pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: bool) -> Result<()> {
+    if let ShowCommands::Substances(args) = args {
+        let logs = db.get_recent_substance_logs(args.days, args.name.as_deref())?;
+        
+        if logs.is_empty() {
+            println!("{}", "No substance logs found".yellow());
+            return Ok(());
+        }
+
+        let mut table = Table::new();
+        table.load_preset(UTF8_FULL).apply_modifier(UTF8_ROUND_CORNERS);
+        table.set_header(vec!["Time", "Substance", "Dose", "Route", "Category", "Notes"]);
+
+        for log in logs {
+            let category = log.category.as_deref().unwrap_or("—");
+            let notes = log.notes.as_deref().unwrap_or("—");
+            
+            table.add_row(vec![
+                Cell::new(&log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(&log.substance_name),
+                Cell::new(&format!("{}mg", log.dose_mg as u64)),
+                Cell::new(&log.route),
+                Cell::new(category),
+                Cell::new(notes),
+            ]);
+        }
+
+        println!("{}", table);
+    }
     Ok(())
 }
 
@@ -188,7 +238,7 @@ pub fn handle_report(_db: &Database, _args: &ReportArgs, _no_color: bool) -> Res
 }
 
 pub fn handle_check(_db: &Database, _no_color: bool) -> Result<()> {
-    println!("{}", "������������ Safety check: no protocols triggered".green());
+    println!("{}", "������� Safety check: no protocols triggered".green());
     Ok(())
 }
 
