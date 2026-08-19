@@ -188,6 +188,42 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
     if let LogCommands::Food(args) = args {
         let timestamp = parse_time(&args.time)?;
 
+        // Try to search USDA for this food to get FDC ID and nutrients
+        let (fdc_id, nutrients) = if let Ok(api_key) = std::env::var("USDA_API_KEY")
+            .or_else(|_| std::env::var("FOODDATA_API_KEY"))
+        {
+            let client = crate::food_db::FoodDbClient::new(api_key);
+            let rt = tokio::runtime::Runtime::new()?;
+            
+            // Search for the food
+            if let Ok(foods) = rt.block_on(client.search_foods(&args.name)) {
+                if let Some(best_match) = foods.first() {
+                    // Get nutrient info for this amount
+                    if let Ok(nutrient_infos) = rt.block_on(client.get_nutrients_for_amount(best_match.fdc_id, args.amount, &args.unit)) {
+                        // Convert to our NutrientInfo model
+                        let nutrients: Vec<crate::models::NutrientInfo> = nutrient_infos
+                            .into_iter()
+                            .map(|n| crate::models::NutrientInfo {
+                                name: n.name,
+                                amount: n.amount,
+                                unit: n.unit,
+                            })
+                            .collect();
+                        
+                        (Some(best_match.fdc_id), Some(nutrients))
+                    } else {
+                        (Some(best_match.fdc_id), None)
+                    }
+                } else {
+                    (None, None)
+                }
+            } else {
+                (None, None)
+            }
+        } else {
+            (None, None)
+        };
+
         // Create and insert food log
         let log = FoodLog {
             id: Uuid::new_v4(),
@@ -196,6 +232,8 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             unit: args.unit.clone(),
             timestamp,
             notes: args.notes.clone(),
+            fdc_id,
+            nutrients: nutrients.clone(),
         };
 
         db.insert_food_log(&log)?;
@@ -203,7 +241,7 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
         println!(
             "{}",
             format!(
-                "������� Logged food: {} {} {} at {}",
+                "🍽️  Logged food: {} {} {} at {}",
                 args.amount,
                 args.unit,
                 args.name,
@@ -211,6 +249,42 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             )
             .green()
         );
+        
+        // Display nutrient info if available
+        if let Some(nutrients) = nutrients {
+            if !nutrients.is_empty() {
+                println!();
+                println!("{}", "Nutrient breakdown:".bold().underline());
+                let mut table = Table::new();
+                table
+                    .load_preset(UTF8_FULL)
+                    .apply_modifier(UTF8_ROUND_CORNERS)
+                    .set_header(vec!["Nutrient", "Amount", "Unit"]);
+                
+                for nutrient in nutrients.iter().take(15) {
+                    table.add_row(vec![
+                        Cell::new(&nutrient.name),
+                        Cell::new(&format!("{:.1}", nutrient.amount)),
+                        Cell::new(&nutrient.unit),
+                    ]);
+                }
+                
+                if nutrients.len() > 15 {
+                    table.add_row(vec![
+                        Cell::new(&format!("... and {} more", nutrients.len() - 15)),
+                        Cell::new(""),
+                        Cell::new(""),
+                    ]);
+                }
+                
+                println!("{}", table);
+            }
+        } else if fdc_id.is_some() {
+            println!("  (USDA match found but nutrient data unavailable)");
+        } else {
+            println!("  (No USDA API key set — run `export USDA_API_KEY=your_key` for nutrient lookup)");
+        }
+        
         if let Some(n) = &args.notes {
             println!("  Notes: {}", n);
         }
@@ -1017,6 +1091,8 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
     let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
     let food_logs = db.get_recent_food_logs_detailed(days)?;
     let stacks = db.list_stacks()?;
+    let nutrient_totals = db.get_nutrient_totals(days).ok();
+    let daily_nutrients = db.get_daily_nutrient_aggregates(days).ok();
 
     let mut report = String::new();
     let now = Utc::now();
@@ -1167,6 +1243,43 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
         report.push('\n');
     }
 
+    // Nutrient Summary (if available)
+    if let Some(totals) = nutrient_totals {
+        if !totals.totals.is_empty() {
+            report.push_str("## Nutrient Totals\n\n");
+            report.push_str("| Nutrient | Total Amount | Unit |\n");
+            report.push_str("|----------|--------------|------|\n");
+            for nutrient in &totals.totals {
+                report.push_str(&format!(
+                    "| {} | {:.1} | {} |\n",
+                    nutrient.name, nutrient.amount, nutrient.unit
+                ));
+            }
+            report.push('\n');
+        }
+    }
+
+    // Daily Nutrient Breakdown (if available)
+    if let Some(daily) = daily_nutrients {
+        if !daily.is_empty() {
+            report.push_str("## Daily Nutrient Breakdown\n\n");
+            for day in &daily {
+                report.push_str(&format!("### {}\n\n", day.date.format("%Y-%m-%d")));
+                if !day.nutrients.is_empty() {
+                    report.push_str("| Nutrient | Amount | Unit |\n");
+                    report.push_str("|----------|--------|------|\n");
+                    for nutrient in &day.nutrients {
+                        report.push_str(&format!(
+                            "| {} | {:.1} | {} |\n",
+                            nutrient.name, nutrient.amount, nutrient.unit
+                        ));
+                    }
+                    report.push('\n');
+                }
+            }
+        }
+    }
+
     // Vitals Summary (clinician-friendly)
     if !vitals_logs.is_empty() {
         report.push_str("## Vitals Summary (for Clinician Review)\n\n");
@@ -1240,6 +1353,7 @@ fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
     let substance_logs = db.get_recent_substance_logs_detailed(days)?;
     let vitals_logs = db.get_recent_vitals_logs_detailed(days)?;
     let food_logs = db.get_recent_food_logs_detailed(days)?;
+    let nutrient_totals = db.get_nutrient_totals(days).ok();
 
     let mut csv = String::new();
 
@@ -1305,6 +1419,23 @@ fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
             ));
         }
         csv.push('\n');
+    }
+
+    // Nutrient totals CSV
+    if let Some(totals) = nutrient_totals {
+        if !totals.totals.is_empty() {
+            csv.push_str("# Nutrient Totals\n");
+            csv.push_str("nutrient,total_amount,unit\n");
+            for nutrient in &totals.totals {
+                csv.push_str(&format!(
+                    "{},{:.1},{}\n",
+                    nutrient.name.replace('"', "\"\""),
+                    nutrient.amount,
+                    nutrient.unit
+                ));
+            }
+            csv.push('\n');
+        }
     }
 
     Ok(csv)

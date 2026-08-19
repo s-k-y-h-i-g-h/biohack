@@ -137,7 +137,7 @@ quality_gates:
 - **Acceptance**: `biohack log food --name "Salmon" --amount 150 --unit g` shows protein, omega-3, etc.
 - **Priority**: medium
 - **Dependencies**: [REQ-010]
-- **Status**: 🔄 PARTIAL — USDA client & `biohack show food-search` implemented (search/discovery works); nutrient display on `log food` + daily totals pending
+- **Status**: ✅ COMPLETED — USDA client & `biohack show food-search` implemented; `biohack log food` now searches USDA, displays nutrient breakdown, stores FDC ID + nutrients; `biohack report` includes nutrient totals & daily breakdown
 
 ### REQ-019: Protocol YAML Versioning & Migration
 - **Description**: Versioned protocol YAMLs with migration support for safe updates

@@ -201,6 +201,16 @@ pub struct FoodLog {
     pub unit: String,
     pub timestamp: DateTime<Utc>,
     pub notes: Option<String>,
+    /// Optional USDA FDC ID for nutrient lookup
+    pub fdc_id: Option<i64>,
+    /// Cached nutrient info for this log entry (macros/micros)
+    pub nutrients: Option<Vec<NutrientInfo>>,
 }
 
-// TODO: Add nutrient tracking fields in v1.1 (macronutrients, micronutrients)
+/// Simplified nutrient info for display/storage
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NutrientInfo {
+    pub name: String,
+    pub amount: f64,
+    pub unit: String,
+}

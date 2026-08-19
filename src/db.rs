@@ -6,7 +6,7 @@ use sled::{Config, Db, Tree};
 use std::path::PathBuf;
 use uuid::Uuid;
 
-use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
+use crate::models::{FoodLog, NutrientInfo, Stack, Substance, SubstanceLog, VitalsLog};
 
 const SUBSTANCES_TREE: &str = "substances";
 const SUBSTANCE_LOGS_TREE: &str = "substance_logs";
@@ -527,4 +527,105 @@ pub struct ReportSummary {
     pub vitals_logs: usize,
     pub food_logs: usize,
     pub unique_substances: usize,
+}
+
+/// Daily nutrient aggregate for reporting
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DailyNutrientAggregate {
+    pub date: chrono::NaiveDate,
+    pub nutrients: Vec<NutrientInfo>,
+}
+
+/// Nutrient totals across a time range
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NutrientTotals {
+    pub days: u32,
+    pub totals: Vec<NutrientInfo>,
+}
+
+impl Database {
+    /// Get all food logs with nutrient data for a time range (for report)
+    pub fn get_recent_food_logs_with_nutrients(&self, days: u32) -> Result<Vec<FoodLog>> {
+        let since = Utc::now() - chrono::Duration::days(days as i64);
+        let mut results = Vec::new();
+
+        for item in self.substance_logs.iter().rev() {
+            let (_, value) = item?;
+            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                #[allow(clippy::collapsible_if)]
+                if log.timestamp >= since {
+                    results.push(log);
+                }
+            }
+        }
+
+        // Sort by timestamp ascending (oldest first for report)
+        results.sort_by_key(|a| a.timestamp);
+        Ok(results)
+    }
+
+    /// Get nutrient totals across a time range
+    pub fn get_nutrient_totals(&self, days: u32) -> Result<NutrientTotals> {
+        let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
+        
+        // Aggregate nutrients by name
+        let mut nutrient_map: std::collections::HashMap<String, (f64, String)> = std::collections::HashMap::new();
+        
+        for log in food_logs {
+            if let Some(nutrients) = log.nutrients {
+                for nutrient in nutrients {
+                    let entry = nutrient_map.entry(nutrient.name.clone()).or_insert((0.0, nutrient.unit.clone()));
+                    entry.0 += nutrient.amount;
+                }
+            }
+        }
+        
+        let mut totals: Vec<NutrientInfo> = nutrient_map
+            .into_iter()
+            .map(|(name, (amount, unit))| NutrientInfo { name, amount, unit })
+            .collect();
+        
+        // Sort by name for consistent output
+        totals.sort_by(|a, b| a.name.cmp(&b.name));
+        
+        Ok(NutrientTotals { days, totals })
+    }
+
+    /// Get daily nutrient aggregates for a time range
+    pub fn get_daily_nutrient_aggregates(&self, days: u32) -> Result<Vec<DailyNutrientAggregate>> {
+        let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
+        
+        // Group by date
+        let mut daily_map: std::collections::HashMap<chrono::NaiveDate, Vec<NutrientInfo>> = std::collections::HashMap::new();
+        
+        for log in food_logs {
+            let date = log.timestamp.date_naive();
+            if let Some(nutrients) = log.nutrients {
+                let entry = daily_map.entry(date).or_insert_with(Vec::new);
+                entry.extend(nutrients);
+            }
+        }
+        
+        // Aggregate nutrients within each day
+        let mut aggregates: Vec<DailyNutrientAggregate> = daily_map
+            .into_iter()
+            .map(|(date, nutrients)| {
+                let mut nutrient_map: std::collections::HashMap<String, (f64, String)> = std::collections::HashMap::new();
+                for nutrient in nutrients {
+                    let entry = nutrient_map.entry(nutrient.name).or_insert((0.0, nutrient.unit));
+                    entry.0 += nutrient.amount;
+                }
+                let totals: Vec<NutrientInfo> = nutrient_map
+                    .into_iter()
+                    .map(|(name, (amount, unit))| NutrientInfo { name, amount, unit })
+                    .collect();
+                DailyNutrientAggregate { date, nutrients: totals }
+            })
+            .collect();
+        
+        // Sort by date
+        aggregates.sort_by_key(|a| a.date);
+        
+        Ok(aggregates)
+    }
 }
