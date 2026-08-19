@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Local, Utc};
 use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use owo_colors::OwoColorize;
 use std::io::Write;
@@ -228,7 +228,7 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
             return Ok(());
         }
 
-        let now = Utc::now();
+        let now = Local::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
@@ -247,11 +247,12 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
         for log in logs {
             let category = log.category.as_deref().unwrap_or("—");
             let notes = log.notes.as_deref().unwrap_or("—");
-            let time_ago = format_duration(now.signed_duration_since(log.timestamp));
+            let local_time = log.timestamp.with_timezone(&Local);
+            let time_ago = format_duration(now.signed_duration_since(local_time));
 
             table.add_row(vec![
                 Cell::new(log.id.to_string()),
-                Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(local_time.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(time_ago),
                 Cell::new(&log.substance_name),
                 Cell::new(format!("{}mg", log.dose_mg as u64)),
@@ -305,7 +306,7 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
             return Ok(());
         }
 
-        let now = Utc::now();
+        let now = Local::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
@@ -354,11 +355,12 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
                 .map(|v| format!("{:.1}", v))
                 .unwrap_or_else(|| "—".to_string());
             let notes = log.notes.as_deref().unwrap_or("—");
-            let time_ago = format_duration(now.signed_duration_since(log.timestamp));
+            let local_time = log.timestamp.with_timezone(&Local);
+            let time_ago = format_duration(now.signed_duration_since(local_time));
 
             table.add_row(vec![
                 Cell::new(log.id.to_string()),
-                Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(local_time.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(time_ago),
                 Cell::new(&hr),
                 Cell::new(&sbp),
@@ -386,7 +388,7 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
             return Ok(());
         }
 
-        let now = Utc::now();
+        let now = Local::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
@@ -394,8 +396,9 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
         table.set_header(vec!["ID", "Time", "Time Ago", "Type", "Details", "Notes"]);
 
         for entry in entries {
-            let timestamp_str = entry.timestamp().format("%Y-%m-%d %H:%M").to_string();
-            let time_ago = format_duration(now.signed_duration_since(entry.timestamp()));
+            let local_time = entry.timestamp().with_timezone(&Local);
+            let timestamp_str = local_time.format("%Y-%m-%d %H:%M").to_string();
+            let time_ago = format_duration(now.signed_duration_since(local_time));
             let (entry_type, id, details, notes) = match entry {
                 crate::db::TimelineEntry::Substance(log) => (
                     "Substance".to_string(),
