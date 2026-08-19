@@ -234,6 +234,7 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
         table.set_header(vec![
+            "ID",
             "Time",
             "Time Ago",
             "Substance",
@@ -249,6 +250,7 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
             let time_ago = format_duration(now.signed_duration_since(log.timestamp));
 
             table.add_row(vec![
+                Cell::new(log.id.to_string()),
                 Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(time_ago),
                 Cell::new(&log.substance_name),
@@ -303,12 +305,15 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
             return Ok(());
         }
 
+        let now = Utc::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
         table.set_header(vec![
+            "ID",
             "Time",
+            "Time Ago",
             "HR",
             "SBP",
             "DBP",
@@ -349,9 +354,12 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
                 .map(|v| format!("{:.1}", v))
                 .unwrap_or_else(|| "—".to_string());
             let notes = log.notes.as_deref().unwrap_or("—");
+            let time_ago = format_duration(now.signed_duration_since(log.timestamp));
 
             table.add_row(vec![
+                Cell::new(log.id.to_string()),
                 Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(time_ago),
                 Cell::new(&hr),
                 Cell::new(&sbp),
                 Cell::new(&dbp),
@@ -378,17 +386,20 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
             return Ok(());
         }
 
+        let now = Utc::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
-        table.set_header(vec!["Time", "Type", "Details", "Notes"]);
+        table.set_header(vec!["ID", "Time", "Time Ago", "Type", "Details", "Notes"]);
 
         for entry in entries {
             let timestamp_str = entry.timestamp().format("%Y-%m-%d %H:%M").to_string();
-            let (entry_type, details, notes) = match entry {
+            let time_ago = format_duration(now.signed_duration_since(entry.timestamp()));
+            let (entry_type, id, details, notes) = match entry {
                 crate::db::TimelineEntry::Substance(log) => (
                     "Substance".to_string(),
+                    log.id.to_string(),
                     format!(
                         "{} {}mg {}",
                         log.substance_name, log.dose_mg as u64, log.route
@@ -420,19 +431,23 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
                     }
                     (
                         "Vitals".to_string(),
+                        log.id.to_string(),
                         parts.join(" "),
                         log.notes.as_deref().unwrap_or("—").to_string(),
                     )
                 }
                 crate::db::TimelineEntry::Food(log) => (
                     "Food".to_string(),
+                    log.id.to_string(),
                     format!("{} {} {}", log.amount, log.unit, log.food_name),
                     log.notes.as_deref().unwrap_or("—").to_string(),
                 ),
             };
 
             table.add_row(vec![
+                Cell::new(&id),
                 Cell::new(&timestamp_str),
+                Cell::new(&time_ago),
                 Cell::new(&entry_type),
                 Cell::new(&details),
                 Cell::new(&notes),
@@ -440,6 +455,39 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
         }
 
         println!("{}", table);
+    }
+    Ok(())
+}
+
+/// Remove a substance log by ID
+pub fn handle_remove_substance(db: &Database, id: Uuid, _no_color: bool) -> Result<()> {
+    let deleted = db.delete_substance_log(id)?;
+    if deleted {
+        println!("{}", format!("Removed substance log: {}", id).green());
+    } else {
+        println!("{}", format!("Substance log not found: {}", id).red());
+    }
+    Ok(())
+}
+
+/// Remove a vitals log by ID
+pub fn handle_remove_vitals(db: &Database, id: Uuid, _no_color: bool) -> Result<()> {
+    let deleted = db.delete_vitals_log(id)?;
+    if deleted {
+        println!("{}", format!("Removed vitals log: {}", id).green());
+    } else {
+        println!("{}", format!("Vitals log not found: {}", id).red());
+    }
+    Ok(())
+}
+
+/// Remove a food log by ID
+pub fn handle_remove_food(db: &Database, id: Uuid, _no_color: bool) -> Result<()> {
+    let deleted = db.delete_food_log(id)?;
+    if deleted {
+        println!("{}", format!("Removed food log: {}", id).green());
+    } else {
+        println!("{}", format!("Food log not found: {}", id).red());
     }
     Ok(())
 }

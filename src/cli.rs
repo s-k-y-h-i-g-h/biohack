@@ -92,6 +92,10 @@ pub enum Commands {
 
     /// Initialize database and config
     Init,
+
+    /// Remove a log entry by ID
+    #[command(subcommand)]
+    Remove(RemoveCommands),
 }
 
 #[derive(Subcommand, Debug)]
@@ -368,4 +372,16 @@ pub struct ReportArgs {
     /// Output file (default: stdout)
     #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum RemoveCommands {
+    /// Remove a substance log by ID
+    Substance { id: String },
+
+    /// Remove a vitals log by ID
+    Vitals { id: String },
+
+    /// Remove a food log by ID
+    Food { id: String },
 }

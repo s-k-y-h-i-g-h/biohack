@@ -67,6 +67,14 @@
 - [x] Build succeeds: `cargo build`
 - [x] Manual check: `biohack show timeline --days 7` shows combined chronological table
 
+## Phase 6b: Remove Log Entries (v1.0)
+- [x] Task 19b: Add ID column to `biohack show substances`, `biohack show vitals`, `biohack show timeline`
+- [x] Task 19c: Add database delete methods for substance logs, vitals logs, food logs
+- [x] Task 19d: Implement `biohack remove substance <id>`, `biohack remove vitals <id>`, `biohack remove food <id>` commands
+- [x] Task 19e: Add integration tests for remove commands
+
+**Checkpoint: Remove Log Entries** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
+
 ## Phase 7: Stack Management (v1.0)
 - [x] Task 20: Implement stack YAML schema and data model
 - [x] Task 21: Create `biohack stack create/list/show` commands

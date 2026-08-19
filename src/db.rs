@@ -4,6 +4,7 @@ use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use sled::{Config, Db, Tree};
 use std::path::PathBuf;
+use uuid::Uuid;
 
 use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
 
@@ -434,6 +435,86 @@ impl Database {
         // Sort by timestamp ascending (oldest first for report)
         results.sort_by_key(|a| a.timestamp);
         Ok(results)
+    }
+
+    // ===== Delete Operations =====
+
+    /// Delete a substance log by ID
+    pub fn delete_substance_log(&self, id: Uuid) -> Result<bool> {
+        let mut found = false;
+        let mut keys_to_delete = Vec::new();
+
+        for item in self.substance_logs.iter() {
+            let (key, value) = item?;
+            if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                if log.id == id {
+                    keys_to_delete.push(key);
+                    found = true;
+                }
+            }
+        }
+
+        for key in keys_to_delete {
+            self.substance_logs.remove(key)?;
+        }
+
+        if found {
+            self.flush()?;
+        }
+
+        Ok(found)
+    }
+
+    /// Delete a vitals log by ID
+    pub fn delete_vitals_log(&self, id: Uuid) -> Result<bool> {
+        let mut found = false;
+        let mut keys_to_delete = Vec::new();
+
+        for item in self.vitals_logs.iter() {
+            let (key, value) = item?;
+            if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                if log.id == id {
+                    keys_to_delete.push(key);
+                    found = true;
+                }
+            }
+        }
+
+        for key in keys_to_delete {
+            self.vitals_logs.remove(key)?;
+        }
+
+        if found {
+            self.flush()?;
+        }
+
+        Ok(found)
+    }
+
+    /// Delete a food log by ID
+    pub fn delete_food_log(&self, id: Uuid) -> Result<bool> {
+        let mut found = false;
+        let mut keys_to_delete = Vec::new();
+
+        for item in self.substance_logs.iter() {
+            let (key, value) = item?;
+            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                if log.id == id {
+                    keys_to_delete.push(key);
+                    found = true;
+                }
+            }
+        }
+
+        for key in keys_to_delete {
+            self.substance_logs.remove(key)?;
+        }
+
+        if found {
+            self.flush()?;
+        }
+
+        Ok(found)
     }
 }
 

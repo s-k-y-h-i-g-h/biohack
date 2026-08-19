@@ -145,3 +145,10 @@ quality_gates:
 - **Priority**: medium
 - **Dependencies**: [REQ-006]
 - **Status**: ��� PLANNED v1.1
+
+### REQ-020: Remove Log Entries
+- **Description**: Remove individual log entries (substances, vitals, food) by ID
+- **Acceptance**: `biohack show substances --days 7` displays IDs; `biohack remove substance <id>` deletes the entry; similar for vitals and food
+- **Priority**: high
+- **Dependencies**: [REQ-011, REQ-012, REQ-013]
+- **Status**: ✅ COMPLETED

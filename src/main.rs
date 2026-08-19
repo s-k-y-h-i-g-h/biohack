@@ -9,11 +9,12 @@ mod models;
 mod protocols;
 
 use crate::cli::{
-    Cli, Commands, LogCommands, ProtocolCommands, ShowCommands, StackCommands, SubstanceCommands,
+    Cli, Commands, LogCommands, ProtocolCommands, RemoveCommands, ShowCommands, StackCommands, SubstanceCommands,
 };
 use anyhow::Result;
 use clap::Parser;
 use owo_colors::OwoColorize;
+use uuid::Uuid;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -81,6 +82,21 @@ fn main() -> Result<()> {
         Commands::Report(args) => commands::handle_report(&db, &args, cli.no_color)?,
 
         Commands::Check => commands::handle_check(&db, cli.no_color)?,
+
+        Commands::Remove(cmd) => match cmd {
+            RemoveCommands::Substance { id } => {
+                let uuid = Uuid::parse_str(&id)?;
+                commands::handle_remove_substance(&db, uuid, cli.no_color)?
+            }
+            RemoveCommands::Vitals { id } => {
+                let uuid = Uuid::parse_str(&id)?;
+                commands::handle_remove_vitals(&db, uuid, cli.no_color)?
+            }
+            RemoveCommands::Food { id } => {
+                let uuid = Uuid::parse_str(&id)?;
+                commands::handle_remove_food(&db, uuid, cli.no_color)?
+            }
+        },
     }
 
     Ok(())
