@@ -72,6 +72,12 @@ fn main() -> Result<()> {
             ProtocolCommands::Show { .. } => {
                 println!("{}", "Not yet implemented".yellow());
             }
+            ProtocolCommands::Seed => {
+                commands::handle_protocol_seed(&db, &cmd, cli.no_color)?
+            }
+            ProtocolCommands::Migrate(args) => {
+                commands::handle_protocol_migrate(&db, &args, cli.no_color)?
+            }
         },
 
         Commands::Report(args) => commands::handle_report(&db, &args, cli.no_color)?,

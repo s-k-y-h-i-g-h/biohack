@@ -351,6 +351,26 @@ pub enum ProtocolCommands {
 
     /// Show protocol details
     Show(ProtocolShowArgs),
+
+    /// Save built-in protocols to database
+    Seed,
+
+    /// Migrate protocol YAML files to current schema version
+    Migrate(ProtocolMigrateArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct ProtocolMigrateArgs {
+    /// Protocol ID to migrate (if omitted, migrates all)
+    pub protocol_id: Option<String>,
+
+    /// Force migration even if version is current
+    #[arg(long)]
+    pub force: bool,
+
+    /// Dry run - show what would be migrated without saving
+    #[arg(long)]
+    pub dry_run: bool,
 }
 
 #[derive(Subcommand, Debug)]

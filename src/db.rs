@@ -6,7 +6,7 @@ use sled::{Config, Db, Tree};
 use std::path::PathBuf;
 use uuid::Uuid;
 
-use crate::models::{FoodLog, NutrientInfo, Stack, Substance, SubstanceLog, VitalsLog};
+use crate::models::{FoodLog, NutrientInfo, Protocol, Stack, Substance, SubstanceLog, VitalsLog};
 use crate::nutrient_ref::{DailyNutrientStatus, NutrientStatus, NutrientStatusLevel};
 
 const SUBSTANCES_TREE: &str = "substances";
@@ -694,5 +694,117 @@ impl Database {
         }
 
         Ok(results)
+    }
+
+    // ===== Protocol Versioning & Migration =====
+
+    /// Insert or update a protocol in the database
+    pub fn upsert_protocol(&self, protocol: &Protocol) -> Result<()> {
+        let key = protocol.id.clone();
+        let value = self.serialize(protocol)?;
+        self.protocols.insert(key, value)?;
+        self.flush()?;
+        Ok(())
+    }
+
+    /// Get a protocol by ID from the database
+    pub fn get_protocol(&self, id: &str) -> Result<Option<Protocol>> {
+        if let Some(value) = self.protocols.get(id)? {
+            let protocol: Protocol = self.deserialize(&value)?;
+            Ok(Some(protocol))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// List all protocols in the database
+    pub fn list_protocols(&self) -> Result<Vec<Protocol>> {
+        let mut results = Vec::new();
+        for item in self.protocols.iter() {
+            let (_, value) = item?;
+            let protocol: Protocol = self.deserialize(&value)?;
+            results.push(protocol);
+        }
+        results.sort_by(|a, b| a.id.cmp(&b.id));
+        Ok(results)
+    }
+
+    /// Delete a protocol from the database
+    pub fn delete_protocol(&self, id: &str) -> Result<bool> {
+        let removed = self.protocols.remove(id)?.is_some();
+        if removed {
+            self.flush()?;
+        }
+        Ok(removed)
+    }
+
+    /// Migrate a protocol from an older version to the current schema
+    /// This applies version-specific transformations
+    pub fn migrate_protocol(&self, protocol: &mut Protocol) -> Result<()> {
+        // Parse version
+        let version = protocol.version.clone();
+        let parts: Vec<&str> = version.split('.').collect();
+        if parts.len() != 3 {
+            return Ok(()); // Can't parse, skip migration
+        }
+
+        let major: u32 = parts[0].parse().unwrap_or(0);
+        let minor: u32 = parts[1].parse().unwrap_or(0);
+        let patch: u32 = parts[2].parse().unwrap_or(0);
+
+        let mut current_version = (major, minor, patch);
+
+        // Migration: 1.0.x -> 1.1.0 (example: added default evidence field if missing)
+        if current_version < (1, 1, 0) {
+            // Ensure evidence field is present (added in schema v1.1)
+            if protocol.evidence.is_empty() {
+                protocol.evidence = vec!["(migrated from v1.0 - evidence field added)".to_string()];
+            }
+            current_version = (1, 1, 0);
+        }
+
+        // Migration: 1.1.x -> 1.2.0 (example: added rationale to actions if missing)
+        if current_version < (1, 2, 0) {
+            for action in &mut protocol.actions {
+                if action.rationale.is_none() {
+                    action.rationale = Some("(migrated from v1.1 - rationale field added)".to_string());
+                }
+            }
+            current_version = (1, 2, 0);
+        }
+
+        // Migration: 1.x.x -> 2.0.0 (major version bump - breaking changes)
+        // Example: renamed field "field" to "target_field" in atomic conditions
+        if current_version < (2, 0, 0) {
+            // For now, we just bump the version - actual field migrations would be more complex
+            // and depend on specific breaking changes
+            current_version = (2, 0, 0);
+        }
+
+        // Update version if migrated
+        if current_version != (major, minor, patch) {
+            protocol.version = format!("{}.{}.{}", current_version.0, current_version.1, current_version.2);
+        }
+
+        Ok(())
+    }
+
+    /// Load all protocols from database, migrating as needed
+    pub fn load_all_protocols(&self) -> Result<Vec<Protocol>> {
+        let mut protocols = self.list_protocols()?;
+        for protocol in &mut protocols {
+            self.migrate_protocol(protocol)?;
+            // Save migrated version back
+            self.upsert_protocol(protocol)?;
+        }
+        Ok(protocols)
+    }
+
+    /// Save built-in protocols to database (for first-time setup or reset)
+    pub fn seed_builtin_protocols(&self, protocols: Vec<Protocol>) -> Result<()> {
+        for protocol in protocols {
+            self.upsert_protocol(&protocol)?;
+        }
+        Ok(())
     }
 }

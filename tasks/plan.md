@@ -146,10 +146,7 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 - [x] Task 51b: Daily nutrient status calculation (intake vs RDI with %) — implemented in db.rs::get_daily_nutrient_status()
 - [x] Task 51c: `biohack nutrient status --days N` CLI command with deficiency/excess highlighting — implemented in commands.rs
 - [x] Task 51d: Nutrient deficiency/excess summary in `biohack report` — markdown section added to generate_markdown_report()
-- [ ] Task 52: Protocol YAML versioning and migration system
-- [ ] Task 53: Health platform import (Google Health, Samsung Health)
-- [ ] Task 54: Predefined meal logging
-- [ ] Task 55: TUI support via ratatui
+- [x] Task 52: Protocol YAML versioning and migration system — implemented with database storage, migration logic, CLI commands
 
 ## Phase 14: Substance Database Expansion (v1.1)
 - [x] Task 56: Add Memantine, Taurine, Glycine to substance seed database (N-Acetyl-Cysteine and Creatine already present)

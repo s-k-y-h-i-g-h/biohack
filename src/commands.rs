@@ -1015,6 +1015,35 @@ pub fn handle_protocol_list(
     Ok(())
 }
 
+/// Protocol seed - save built-in protocols to database
+pub fn handle_protocol_seed(
+    db: &Database,
+    _args: &ProtocolCommands,
+    _no_color: bool,
+) -> Result<()> {
+    let mut engine = ProtocolEngine::new();
+    engine.load_builtin_protocols()?;
+
+    let builtin_protocols = engine.protocols.clone();
+    if builtin_protocols.is_empty() {
+        println!("{}", "No built-in protocols to seed".yellow());
+        return Ok(());
+    }
+
+    db.seed_builtin_protocols(builtin_protocols.clone())?;
+
+    println!(
+        "{}",
+        format!("🌱 Seeded {} built-in protocols", builtin_protocols.len())
+            .green()
+            .bold()
+    );
+    for p in &engine.protocols {
+        println!("  {} v{}", p.id, p.version);
+    }
+    Ok(())
+}
+
 /// Protocol test
 pub fn handle_protocol_test(db: &Database, args: &ProtocolCommands, _no_color: bool) -> Result<()> {
     if let ProtocolCommands::Test(args) = args {
@@ -1089,7 +1118,95 @@ pub fn handle_protocol_test(db: &Database, args: &ProtocolCommands, _no_color: b
     Ok(())
 }
 
-/// Generate markdown report
+/// Protocol migrate
+pub fn handle_protocol_migrate(
+    db: &Database,
+    args: &ProtocolMigrateArgs,
+    _no_color: bool,
+) -> Result<()> {
+    if let Some(protocol_id) = &args.protocol_id {
+        // Migrate specific protocol
+        let mut protocol = db
+            .get_protocol(protocol_id)?
+            .ok_or_else(|| anyhow::anyhow!("Protocol '{}' not found in database", protocol_id))?;
+
+        let old_version = protocol.version.clone();
+        db.migrate_protocol(&mut protocol)?;
+
+        if protocol.version != old_version {
+            println!(
+                "{}",
+                format!(
+                    "Migrated '{}' from v{} to v{}",
+                    protocol_id, old_version, protocol.version
+                )
+                .green()
+            );
+            if !args.dry_run {
+                db.upsert_protocol(&protocol)?;
+                println!("  Saved to database");
+            } else {
+                println!("  [DRY RUN] Not saved");
+            }
+        } else {
+            println!(
+                "{}",
+                format!("Protocol '{}' is already at v{}", protocol_id, old_version).yellow()
+            );
+            if args.force {
+                println!("  Force flag set - re-saving anyway");
+                if !args.dry_run {
+                    db.upsert_protocol(&protocol)?;
+                }
+            }
+        }
+    } else {
+        // Migrate all protocols
+        println!("{}", "Migrating all protocols...".bold());
+        let protocols = db.load_all_protocols()?;
+
+        let mut migrated = 0;
+        for protocol in protocols {
+            let old_version = protocol.version.clone();
+            // Reload and migrate
+            let mut proto = protocol.clone();
+            db.migrate_protocol(&mut proto)?;
+
+            if proto.version != old_version {
+                println!(
+                    "  {} v{} -> v{}",
+                    proto.id, old_version, proto.version
+                );
+                if !args.dry_run {
+                    db.upsert_protocol(&proto)?;
+                    migrated += 1;
+                }
+            }
+        }
+
+        if migrated > 0 {
+            println!(
+                "{}",
+                format!(
+                    "\n{} protocol(s) migrated",
+                    if args.dry_run {
+                        "would be"
+                    } else {
+                        "were"
+                    }
+                )
+                .green()
+            );
+        } else {
+            println!(
+                "{}",
+                "All protocols already at current version".yellow()
+            );
+        }
+    }
+
+    Ok(())
+}
 fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<String> {
     let summary = db.get_report_summary(days)?;
     let substance_logs = db.get_recent_substance_logs_detailed(days)?;
@@ -1548,7 +1665,7 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
 }
 
 /// Nutrient status command handler
-pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, no_color: bool) -> Result<()> {
+pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, _no_color: bool) -> Result<()> {
     let statuses = db.get_nutrient_status(args.days)?;
 
     if statuses.is_empty() {
