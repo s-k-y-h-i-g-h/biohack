@@ -2,6 +2,23 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FoodDataSource {
+    /// OpenFoodFacts - best for UK branded products
+    OpenFoodFacts,
+    /// USDA FoodData Central - best for generic ingredients
+    USDA,
+}
+
+impl FoodDataSource {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            FoodDataSource::OpenFoodFacts => "OpenFoodFacts",
+            FoodDataSource::USDA => "USDA",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SubstanceCategory {
     Supplement,
@@ -201,8 +218,10 @@ pub struct FoodLog {
     pub unit: String,
     pub timestamp: DateTime<Utc>,
     pub notes: Option<String>,
-    /// Optional USDA FDC ID for nutrient lookup
-    pub fdc_id: Option<i64>,
+    /// Optional food database ID (FDC ID for USDA, barcode for OpenFoodFacts)
+    pub food_db_id: Option<String>,
+    /// Data source for this food entry
+    pub source: Option<FoodDataSource>,
     /// Cached nutrient info for this log entry (macros/micros)
     pub nutrients: Option<Vec<NutrientInfo>>,
 }

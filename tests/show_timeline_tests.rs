@@ -90,7 +90,8 @@ mod show_timeline_tests {
             unit: "cups".to_string(),
             timestamp: Utc::now() - Duration::hours(2),
             notes: Some("Lunch".to_string()),
-            fdc_id: None,
+            food_db_id: None,
+            source: None,
             nutrients: None,
         };
 
@@ -145,7 +146,8 @@ mod show_timeline_tests {
             unit: "pcs".to_string(),
             timestamp: Utc::now() - Duration::hours(1),
             notes: Some("Snack".to_string()),
-            fdc_id: None,
+            food_db_id: None,
+            source: None,
             nutrients: None,
         };
 

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Duration, Local, Utc};
 use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
+use crate::nutrient_ref::{NutrientStatusLevel, status_label};
 use owo_colors::OwoColorize;
 use std::io::Write;
 use uuid::Uuid;
@@ -188,18 +189,16 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
     if let LogCommands::Food(args) = args {
         let timestamp = parse_time(&args.time)?;
 
-        // Try to search USDA for this food to get FDC ID and nutrients
-        let (fdc_id, nutrients) = if let Ok(api_key) = std::env::var("USDA_API_KEY")
-            .or_else(|_| std::env::var("FOODDATA_API_KEY"))
-        {
-            let client = crate::food_db::FoodDbClient::new(api_key);
+        // Try to search OpenFoodFacts first (UK branded), then USDA (generic) for nutrients
+        let (food_id, nutrients, source) = {
+            let client = crate::food_db::FoodDbClient::build_client()?;
             let rt = tokio::runtime::Runtime::new()?;
-            
+
             // Search for the food
             if let Ok(foods) = rt.block_on(client.search_foods(&args.name)) {
                 if let Some(best_match) = foods.first() {
                     // Get nutrient info for this amount
-                    if let Ok(nutrient_infos) = rt.block_on(client.get_nutrients_for_amount(best_match.fdc_id, args.amount, &args.unit)) {
+                    if let Ok(nutrient_infos) = rt.block_on(client.get_nutrients_for_amount(&best_match.id, args.amount, &args.unit)) {
                         // Convert to our NutrientInfo model
                         let nutrients: Vec<crate::models::NutrientInfo> = nutrient_infos
                             .into_iter()
@@ -209,19 +208,17 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
                                 unit: n.unit,
                             })
                             .collect();
-                        
-                        (Some(best_match.fdc_id), Some(nutrients))
+
+                        (Some(best_match.id.clone()), Some(nutrients), Some(best_match.source))
                     } else {
-                        (Some(best_match.fdc_id), None)
+                        (Some(best_match.id.clone()), None, Some(best_match.source))
                     }
                 } else {
-                    (None, None)
+                    (None, None, None)
                 }
             } else {
-                (None, None)
+                (None, None, None)
             }
-        } else {
-            (None, None)
         };
 
         // Create and insert food log
@@ -232,7 +229,8 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             unit: args.unit.clone(),
             timestamp,
             notes: args.notes.clone(),
-            fdc_id,
+            food_db_id: food_id.clone(),
+            source,
             nutrients: nutrients.clone(),
         };
 
@@ -249,18 +247,21 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             )
             .green()
         );
-        
+
         // Display nutrient info if available
         if let Some(nutrients) = nutrients {
             if !nutrients.is_empty() {
                 println!();
                 println!("{}", "Nutrient breakdown:".bold().underline());
+                if let Some(src) = source {
+                    println!("  Source: {}", src.as_str());
+                }
                 let mut table = Table::new();
                 table
                     .load_preset(UTF8_FULL)
                     .apply_modifier(UTF8_ROUND_CORNERS)
                     .set_header(vec!["Nutrient", "Amount", "Unit"]);
-                
+
                 for nutrient in nutrients.iter().take(15) {
                     table.add_row(vec![
                         Cell::new(&nutrient.name),
@@ -268,7 +269,7 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
                         Cell::new(&nutrient.unit),
                     ]);
                 }
-                
+
                 if nutrients.len() > 15 {
                     table.add_row(vec![
                         Cell::new(&format!("... and {} more", nutrients.len() - 15)),
@@ -276,15 +277,15 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
                         Cell::new(""),
                     ]);
                 }
-                
+
                 println!("{}", table);
             }
-        } else if fdc_id.is_some() {
-            println!("  (USDA match found but nutrient data unavailable)");
+        } else if food_id.is_some() {
+            println!("  (Match found but nutrient data unavailable)");
         } else {
-            println!("  (No USDA API key set — run `export USDA_API_KEY=your_key` for nutrient lookup)");
+            println!("  (No match found in OpenFoodFacts or USDA — set USDA_API_KEY for broader generic ingredient coverage)");
         }
-        
+
         if let Some(n) = &args.notes {
             println!("  Notes: {}", n);
         }
@@ -569,17 +570,10 @@ pub fn handle_remove_food(db: &Database, id: Uuid, _no_color: bool) -> Result<()
     Ok(())
 }
 
-/// Search USDA FoodData Central for foods and display nutrient info
+/// Search OpenFoodFacts and USDA FoodData Central for foods and display nutrient info
 pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool) -> Result<()> {
-    // Check for USDA API key
-    let api_key = std::env::var("USDA_API_KEY")
-        .or_else(|_| std::env::var("FOODDATA_API_KEY"))
-        .map_err(|_| anyhow::anyhow!(
-            "USDA_API_KEY or FOODDATA_API_KEY environment variable not set.\n\
-            Get a free key at https://fdc.nal.usda.gov/api-key-signup"
-        ))?;
-
-    let client = crate::food_db::FoodDbClient::new(api_key);
+    // Build client (USDA API key optional - OpenFoodFacts works without key)
+    let client = crate::food_db::FoodDbClient::build_client()?;
 
     // Use tokio runtime to run async search
     let rt = tokio::runtime::Runtime::new()?;
@@ -595,21 +589,24 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
     table
         .load_preset(UTF8_FULL)
         .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec!["FDC ID", "Description", "Category", "Data Type"]);
+        .set_header(vec!["ID", "Description", "Brand", "Category", "Source", "Has Nutrients"]);
 
     for food in foods.iter().take(args.limit) {
+        let has_nutrients = food.nutrients_per_100g.is_some();
         table.add_row(vec![
-            Cell::new(&food.fdc_id.to_string()),
+            Cell::new(&food.id),
             Cell::new(&food.description),
-            Cell::new(&food.food_category.as_deref().unwrap_or("—")),
-            Cell::new(&food.data_type),
+            Cell::new(&food.brand.as_deref().unwrap_or("—")),
+            Cell::new(&food.category.as_deref().unwrap_or("—")),
+            Cell::new(food.source.as_str()),
+            Cell::new(if has_nutrients { "✓" } else { "✗" }),
         ]);
     }
 
     println!("{}", table);
     println!();
     println!("Use `biohack log food --name \"<description>\" --amount <n> --unit <unit>` to log a food.");
-    println!("For nutrient details, get a USDA API key and the full implementation will show macros/micros.");
+    println!("For nutrient details, the tool will search OpenFoodFacts first (UK branded), then USDA (generic).");
 
     Ok(())
 }
@@ -1474,6 +1471,104 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
                 "Unknown format '{}'. Supported formats: markdown, csv",
                 args.format
             );
+        }
+    }
+
+    Ok(())
+}
+
+/// Nutrient status command handler
+pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, no_color: bool) -> Result<()> {
+    let statuses = db.get_nutrient_status(args.days)?;
+
+    if statuses.is_empty() {
+        println!("{}", "No nutrient data available for the specified period.".yellow());
+        return Ok(());
+    }
+
+    // Print summary counts
+    let deficient = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Deficient).count();
+    let low = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Low).count();
+    let adequate = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Adequate).count();
+    let high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::High).count();
+    let very_high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::VeryHigh).count();
+    let excessive = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Excessive).count();
+    let no_rdi = statuses.iter().filter(|s| s.status == NutrientStatusLevel::NoRDI).count();
+
+    println!();
+    println!("{}", format!("Nutrient Status (last {} days)", args.days).bold().underline());
+    println!();
+
+    // Summary
+    println!("{}", "Summary:".bold());
+    if deficient > 0 { println!("  {} Deficient", format!("[{}]", deficient).red()); }
+    if low > 0 { println!("  {} Low", format!("[{}]", low).yellow()); }
+    if adequate > 0 { println!("  {} Adequate", format!("[{}]", adequate).green()); }
+    if high > 0 { println!("  {} High", format!("[{}]", high).yellow()); }
+    if very_high > 0 { println!("  {} Very High", format!("[{}]", very_high).magenta()); }
+    if excessive > 0 { println!("  {} Excessive (above UL)", format!("[{}]", excessive).red()); }
+    if no_rdi > 0 { println!("  {} No RDI established", format!("[{}]", no_rdi).dimmed()); }
+    println!();
+
+    // Detailed table
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .apply_modifier(UTF8_ROUND_CORNERS)
+        .set_header(vec!["Nutrient", "Intake", "RDI", "Unit", "% RDI", "UL", "% UL", "Status"]);
+
+    for status in &statuses {
+        let status_str = status_label(status.status);
+        let ul_str = status.ul.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
+        let ul_pct_str = status.percent_ul.map(|v| format!("{:.0}%", v)).unwrap_or_else(|| "—".to_string());
+
+        let status_colored = match status.status {
+            NutrientStatusLevel::Deficient => status_str.red().to_string(),
+            NutrientStatusLevel::Low => status_str.yellow().to_string(),
+            NutrientStatusLevel::Adequate => status_str.green().to_string(),
+            NutrientStatusLevel::High => status_str.yellow().to_string(),
+            NutrientStatusLevel::VeryHigh => status_str.magenta().to_string(),
+            NutrientStatusLevel::Excessive => status_str.red().to_string(),
+            NutrientStatusLevel::NoRDI => status_str.dimmed().to_string(),
+        };
+
+        table.add_row(vec![
+            Cell::new(&status.name),
+            Cell::new(&format!("{:.1}", status.intake)),
+            Cell::new(&format!("{:.1}", status.rdi)),
+            Cell::new(&status.unit),
+            Cell::new(&format!("{:.0}%", status.percent_rdi)),
+            Cell::new(&ul_str),
+            Cell::new(&ul_pct_str),
+            Cell::new(&status_colored.to_string()),
+        ]);
+    }
+
+    println!("{}", table);
+
+    // Recommendations
+    if deficient > 0 || low > 0 || excessive > 0 {
+        println!();
+        println!("{}", "Recommendations:".bold().underline());
+        
+        for status in &statuses {
+            match status.status {
+                NutrientStatusLevel::Deficient => {
+                    println!("  • {}: Consider increasing intake (currently {:.0}% of RDI)", 
+                        status.name, status.percent_rdi);
+                }
+                NutrientStatusLevel::Low => {
+                    println!("  • {}: Monitor intake (currently {:.0}% of RDI)", 
+                        status.name, status.percent_rdi);
+                }
+                NutrientStatusLevel::Excessive => {
+                    if let Some(ul) = status.ul {
+                        println!("  • {}: Reduce intake — currently {:.0}% of UL ({:.1} {})", 
+                            status.name, status.percent_ul.unwrap_or(0.0), ul, status.unit);
+                    }
+                }
+                _ => {}
+            }
         }
     }
 

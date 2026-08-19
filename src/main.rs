@@ -1,15 +1,10 @@
 #!/usr/bin/env rust
 //! biohack - Biohacker's safety-first tracking CLI
 
-mod cli;
-mod commands;
-mod db;
-mod food_db;
-mod models;
-mod protocols;
-
-use crate::cli::{
-    Cli, Commands, LogCommands, ProtocolCommands, RemoveCommands, ShowCommands, StackCommands, SubstanceCommands,
+use biohack::{
+    cli::{Cli, Commands, LogCommands, NutrientCommands, ProtocolCommands, RemoveCommands, ShowCommands, StackCommands, SubstanceCommands},
+    commands,
+    db::Database,
 };
 use anyhow::Result;
 use clap::Parser;
@@ -18,7 +13,7 @@ use uuid::Uuid;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let db = db::Database::new(cli.db_path.clone())?;
+    let db = Database::new(cli.db_path.clone())?;
 
     match cli.command {
         Commands::Init => commands::handle_init(&db)?,
@@ -80,6 +75,10 @@ fn main() -> Result<()> {
         },
 
         Commands::Report(args) => commands::handle_report(&db, &args, cli.no_color)?,
+
+        Commands::Nutrient(cmd) => match cmd {
+            NutrientCommands::Status(args) => commands::handle_nutrient_status(&db, &args, cli.no_color)?,
+        },
 
         Commands::Check => commands::handle_check(&db, cli.no_color)?,
 

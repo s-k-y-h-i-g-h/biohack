@@ -84,6 +84,10 @@ pub enum Commands {
     #[command(subcommand)]
     Protocol(ProtocolCommands),
 
+    /// Nutrient tracking commands
+    #[command(subcommand)]
+    Nutrient(NutrientCommands),
+
     /// Generate reports
     Report(ReportArgs),
 
@@ -347,6 +351,19 @@ pub enum ProtocolCommands {
 
     /// Show protocol details
     Show(ProtocolShowArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum NutrientCommands {
+    /// Show nutrient intake vs RDI status
+    Status(NutrientStatusArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct NutrientStatusArgs {
+    /// Days to look back
+    #[arg(long, default_value = "7")]
+    pub days: u32,
 }
 
 #[derive(Args, Debug)]

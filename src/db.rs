@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 use crate::models::{FoodLog, NutrientInfo, Stack, Substance, SubstanceLog, VitalsLog};
+use crate::nutrient_ref::{DailyNutrientStatus, NutrientStatus, NutrientStatusLevel};
 
 const SUBSTANCES_TREE: &str = "substances";
 const SUBSTANCE_LOGS_TREE: &str = "substance_logs";
@@ -567,10 +568,10 @@ impl Database {
     /// Get nutrient totals across a time range
     pub fn get_nutrient_totals(&self, days: u32) -> Result<NutrientTotals> {
         let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
-        
+
         // Aggregate nutrients by name
         let mut nutrient_map: std::collections::HashMap<String, (f64, String)> = std::collections::HashMap::new();
-        
+
         for log in food_logs {
             if let Some(nutrients) = log.nutrients {
                 for nutrient in nutrients {
@@ -579,25 +580,25 @@ impl Database {
                 }
             }
         }
-        
+
         let mut totals: Vec<NutrientInfo> = nutrient_map
             .into_iter()
             .map(|(name, (amount, unit))| NutrientInfo { name, amount, unit })
             .collect();
-        
+
         // Sort by name for consistent output
         totals.sort_by(|a, b| a.name.cmp(&b.name));
-        
+
         Ok(NutrientTotals { days, totals })
     }
 
     /// Get daily nutrient aggregates for a time range
     pub fn get_daily_nutrient_aggregates(&self, days: u32) -> Result<Vec<DailyNutrientAggregate>> {
         let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
-        
+
         // Group by date
         let mut daily_map: std::collections::HashMap<chrono::NaiveDate, Vec<NutrientInfo>> = std::collections::HashMap::new();
-        
+
         for log in food_logs {
             let date = log.timestamp.date_naive();
             if let Some(nutrients) = log.nutrients {
@@ -605,7 +606,7 @@ impl Database {
                 entry.extend(nutrients);
             }
         }
-        
+
         // Aggregate nutrients within each day
         let mut aggregates: Vec<DailyNutrientAggregate> = daily_map
             .into_iter()
@@ -622,10 +623,76 @@ impl Database {
                 DailyNutrientAggregate { date, nutrients: totals }
             })
             .collect();
-        
+
         // Sort by date
         aggregates.sort_by_key(|a| a.date);
-        
+
         Ok(aggregates)
+    }
+
+    /// Get nutrient status (intake vs RDI) for a time range
+    pub fn get_nutrient_status(&self, days: u32) -> Result<Vec<NutrientStatus>> {
+        use crate::nutrient_ref::{calculate_nutrient_status, get_nutrient_references, NutrientStatusLevel};
+
+        let totals = self.get_nutrient_totals(days)?;
+        let refs = get_nutrient_references();
+
+        let mut statuses = Vec::new();
+        for nutrient in totals.totals {
+            if let Some(reference) = refs.iter().find(|r| r.name == nutrient.name) {
+                let status = calculate_nutrient_status(nutrient.amount, reference);
+                statuses.push(status);
+            }
+        }
+
+        // Sort by status priority: Deficient, Low, Excessive, VeryHigh, High, Adequate, NoRDI
+        statuses.sort_by_key(|s| match s.status {
+            NutrientStatusLevel::Deficient => 0,
+            NutrientStatusLevel::Low => 1,
+            NutrientStatusLevel::Excessive => 2,
+            NutrientStatusLevel::VeryHigh => 3,
+            NutrientStatusLevel::High => 4,
+            NutrientStatusLevel::Adequate => 5,
+            NutrientStatusLevel::NoRDI => 6,
+        });
+
+        Ok(statuses)
+    }
+
+    /// Get daily nutrient status for each day in range
+    pub fn get_daily_nutrient_status(&self, days: u32) -> Result<Vec<DailyNutrientStatus>> {
+        use crate::nutrient_ref::{calculate_nutrient_status, get_nutrient_references, NutrientStatusLevel};
+
+        let daily_aggregates = self.get_daily_nutrient_aggregates(days)?;
+        let refs = get_nutrient_references();
+
+        let mut results = Vec::new();
+        for daily in daily_aggregates {
+            let mut nutrient_statuses = Vec::new();
+            for nutrient in daily.nutrients {
+                if let Some(reference) = refs.iter().find(|r| r.name == nutrient.name) {
+                    let status = calculate_nutrient_status(nutrient.amount, reference);
+                    nutrient_statuses.push(status);
+                }
+            }
+
+            // Sort by status priority
+            nutrient_statuses.sort_by_key(|s| match s.status {
+                NutrientStatusLevel::Deficient => 0,
+                NutrientStatusLevel::Low => 1,
+                NutrientStatusLevel::Excessive => 2,
+                NutrientStatusLevel::VeryHigh => 3,
+                NutrientStatusLevel::High => 4,
+                NutrientStatusLevel::Adequate => 5,
+                NutrientStatusLevel::NoRDI => 6,
+            });
+
+            results.push(DailyNutrientStatus {
+                date: daily.date,
+                nutrients: nutrient_statuses,
+            });
+        }
+
+        Ok(results)
     }
 }
