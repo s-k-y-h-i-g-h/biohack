@@ -1285,6 +1285,68 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
         }
     }
 
+    // Nutrient Status Summary (Deficiency/Excess Analysis)
+    let nutrient_status = db.get_nutrient_status(days).ok();
+    if let Some(statuses) = nutrient_status {
+        if !statuses.is_empty() {
+            let deficient: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Deficient).collect();
+            let low: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Low).collect();
+            let excessive: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Excessive).collect();
+            let very_high: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::VeryHigh).collect();
+            
+            if !deficient.is_empty() || !low.is_empty() || !excessive.is_empty() || !very_high.is_empty() {
+                report.push_str("## Nutrient Status Summary (Deficiency / Excess Analysis)\n\n");
+                
+                if !deficient.is_empty() {
+                    report.push_str("### ⚠ Deficient (< 50% RDI)\n\n");
+                    for s in &deficient {
+                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                    }
+                    report.push('\n');
+                }
+                
+                if !low.is_empty() {
+                    report.push_str("### ⚠ Low (50–99% RDI)\n\n");
+                    for s in &low {
+                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                    }
+                    report.push('\n');
+                }
+                
+                if !very_high.is_empty() {
+                    report.push_str("### ⚠ Very High (150–200% RDI)\n\n");
+                    for s in &very_high {
+                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                    }
+                    report.push('\n');
+                }
+                
+                if !excessive.is_empty() {
+                    report.push_str("### 🚨 Excessive (Above Tolerable Upper Intake Level - UL)\n\n");
+                    for s in &excessive {
+                        let ul = s.ul.unwrap_or(0.0);
+                        report.push_str(&format!("- **{}**: {:.0}% of UL ({:.1} {} / UL {:.1} {}) — **Potential toxicity risk**\n", 
+                            s.name, s.percent_ul.unwrap_or(0.0), s.intake, s.unit, ul, s.unit));
+                    }
+                    report.push('\n');
+                }
+                
+                // Summary counts
+                let adequate = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Adequate).count();
+                let high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::High).count();
+                let no_rdi = statuses.iter().filter(|s| s.status == NutrientStatusLevel::NoRDI).count();
+                
+                report.push_str(&format!(
+                    "\n**Overall:** {} Deficient, {} Low, {} Adequate, {} High, {} Very High, {} Excessive, {} No RDI\n\n",
+                    deficient.len(), low.len(), adequate, high, very_high.len(), excessive.len(), no_rdi
+                ));
+            }
+        }
+    }
+
     // Vitals Summary (clinician-friendly)
     if !vitals_logs.is_empty() {
         report.push_str("## Vitals Summary (for Clinician Review)\n\n");
