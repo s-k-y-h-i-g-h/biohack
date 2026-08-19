@@ -25,24 +25,16 @@ fn main() -> Result<()> {
             LogCommands::Substance(ref _args) => {
                 commands::handle_log_substance(&db, &cmd, cli.no_color)?
             }
-            LogCommands::Vitals(ref _args) => {
-                commands::handle_log_vitals(&db, &cmd, cli.no_color)?
-            }
-            LogCommands::Stack(ref _args) => {
-                commands::handle_log_stack(&db, &cmd, cli.no_color)?
-            }
-            LogCommands::Food(ref _args) => {
-                commands::handle_log_food(&db, &cmd, cli.no_color)?
-            }
+            LogCommands::Vitals(ref _args) => commands::handle_log_vitals(&db, &cmd, cli.no_color)?,
+            LogCommands::Stack(ref _args) => commands::handle_log_stack(&db, &cmd, cli.no_color)?,
+            LogCommands::Food(ref _args) => commands::handle_log_food(&db, &cmd, cli.no_color)?,
         },
 
         Commands::Show(cmd) => match cmd {
             ShowCommands::Substances { .. } => {
                 commands::handle_show_substances(&db, &cmd, cli.no_color)?
             }
-            ShowCommands::Vitals { .. } => {
-                commands::handle_show_vitals(&db, &cmd, cli.no_color)?
-            }
+            ShowCommands::Vitals { .. } => commands::handle_show_vitals(&db, &cmd, cli.no_color)?,
             ShowCommands::Timeline { .. } => {
                 commands::handle_show_timeline(&db, &cmd, cli.no_color)?
             }

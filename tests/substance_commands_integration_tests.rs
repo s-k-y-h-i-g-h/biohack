@@ -75,9 +75,7 @@ mod substance_commands_integration_tests {
         let (db, temp_dir) = setup_empty_db();
         let yaml_path = create_test_yaml(&temp_dir);
 
-        let args = SubstanceSeedArgs {
-            path: yaml_path,
-        };
+        let args = SubstanceSeedArgs { path: yaml_path };
         let cmd = SubstanceCommands::Seed(args);
 
         let result = handle_substance_seed(&db, &cmd, false);
@@ -89,15 +87,24 @@ mod substance_commands_integration_tests {
 
         // Check that we can find each substance by name
         let caffeine = db.get_substance_by_name("Caffeine").unwrap().unwrap();
-        assert_eq!(caffeine.category, biohack::models::SubstanceCategory::Stimulant);
+        assert_eq!(
+            caffeine.category,
+            biohack::models::SubstanceCategory::Stimulant
+        );
         assert_eq!(caffeine.typical_dose_mg, Some(100.0));
 
         let vitamin_c = db.get_substance_by_name("Vitamin C").unwrap().unwrap();
-        assert_eq!(vitamin_c.category, biohack::models::SubstanceCategory::Vitamin);
+        assert_eq!(
+            vitamin_c.category,
+            biohack::models::SubstanceCategory::Vitamin
+        );
         assert_eq!(vitamin_c.typical_dose_mg, Some(500.0));
 
         let magnesium = db.get_substance_by_name("Magnesium").unwrap().unwrap();
-        assert_eq!(magnesium.category, biohack::models::SubstanceCategory::Mineral);
+        assert_eq!(
+            magnesium.category,
+            biohack::models::SubstanceCategory::Mineral
+        );
         assert_eq!(magnesium.typical_dose_mg, Some(400.0));
     }
 
@@ -107,9 +114,7 @@ mod substance_commands_integration_tests {
         let yaml_path = create_test_yaml(&temp_dir);
 
         // First, seed the database
-        let seed_args = SubstanceSeedArgs {
-            path: yaml_path,
-        };
+        let seed_args = SubstanceSeedArgs { path: yaml_path };
         let seed_cmd = SubstanceCommands::Seed(seed_args);
         handle_substance_seed(&db, &seed_cmd, false).unwrap();
 
@@ -132,9 +137,7 @@ mod substance_commands_integration_tests {
         let yaml_path = create_test_yaml(&temp_dir);
 
         // Seed the database
-        let seed_args = SubstanceSeedArgs {
-            path: yaml_path,
-        };
+        let seed_args = SubstanceSeedArgs { path: yaml_path };
         let seed_cmd = SubstanceCommands::Seed(seed_args);
         handle_substance_seed(&db, &seed_cmd, false).unwrap();
 
@@ -152,7 +155,10 @@ mod substance_commands_integration_tests {
         assert_eq!(substances.len(), 1);
         let substance = &substances[0];
         assert_eq!(substance.name, "Vitamin C");
-        assert_eq!(substance.category, biohack::models::SubstanceCategory::Vitamin);
+        assert_eq!(
+            substance.category,
+            biohack::models::SubstanceCategory::Vitamin
+        );
     }
 
     #[test]

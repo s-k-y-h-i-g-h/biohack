@@ -1,8 +1,6 @@
 //! Tests for protocol engine
 
-use biohack::models::{
-    SubstanceLog, VitalsLog,
-};
+use biohack::models::{SubstanceLog, VitalsLog};
 use biohack::protocols::{ProtocolContext, ProtocolEngine};
 use chrono::{Duration, Utc};
 use uuid::Uuid;

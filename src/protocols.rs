@@ -116,7 +116,8 @@ impl ProtocolEngine {
         matched: &mut Vec<String>,
     ) {
         if let ProtocolTriggerType::Atomic = condition.trigger_type
-            && let (Some(field), Some(op), Some(value)) = (&condition.field, &condition.operator, &condition.value)
+            && let (Some(field), Some(op), Some(value)) =
+                (&condition.field, &condition.operator, &condition.value)
             && self.check_atomic_condition(field, op, value, ctx)
         {
             matched.push(format!("{} {} {}", field, op, value));

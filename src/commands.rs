@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::cli::*;
 use crate::db::Database;
 use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
+use crate::protocols::{ProtocolContext, ProtocolEngine};
 
 /// Initialize the database
 pub fn handle_init(_db: &Database) -> Result<()> {
@@ -620,23 +621,106 @@ pub fn handle_check(_db: &Database, _no_color: bool) -> Result<()> {
     Ok(())
 }
 
-/// Protocol list (placeholder)
+/// Protocol list
 pub fn handle_protocol_list(
     _db: &Database,
     _args: &ProtocolCommands,
     _no_color: bool,
 ) -> Result<()> {
-    println!("{}", "Not yet implemented: list protocols".yellow());
+    let mut engine = ProtocolEngine::new();
+    engine.load_builtin_protocols()?;
+
+    if engine.protocols.is_empty() {
+        println!("{}", "No protocols found".yellow());
+        return Ok(());
+    }
+
+    for protocol in &engine.protocols {
+        println!(
+            "{}",
+            format!("[PROTOCOL] {} ({})", protocol.name, protocol.id)
+                .green()
+                .bold()
+        );
+        println!("  {}", protocol.description);
+        println!("  Version: {}", protocol.version);
+        println!("  Actions: {}", protocol.actions.len());
+        println!();
+    }
     Ok(())
 }
 
-/// Protocol test (placeholder)
-pub fn handle_protocol_test(
-    _db: &Database,
-    _args: &ProtocolCommands,
-    _no_color: bool,
-) -> Result<()> {
-    println!("{}", "Not yet implemented: test protocol".yellow());
+/// Protocol test
+pub fn handle_protocol_test(db: &Database, args: &ProtocolCommands, _no_color: bool) -> Result<()> {
+    if let ProtocolCommands::Test(args) = args {
+        let mut engine = ProtocolEngine::new();
+        engine.load_builtin_protocols()?;
+
+        let protocol = engine
+            .protocols
+            .iter()
+            .find(|p| p.id == args.protocol_id)
+            .ok_or_else(|| anyhow::anyhow!("Protocol '{}' not found", args.protocol_id))?;
+
+        println!(
+            "{}",
+            format!(
+                "[TEST] Testing protocol: {} ({})",
+                protocol.name, protocol.id
+            )
+            .green()
+            .bold()
+        );
+        println!("Description: {}", protocol.description);
+        println!();
+
+        // Get recent data for testing
+        let recent_substances = db.get_recent_substance_logs(24, None)?;
+        let recent_vitals = db.get_recent_vitals_logs(24)?;
+        let current_vitals = recent_vitals.first().cloned();
+
+        let ctx = ProtocolContext {
+            recent_substances,
+            recent_vitals,
+            current_vitals,
+        };
+
+        let results = engine.evaluate(&ctx);
+        let result = results
+            .iter()
+            .find(|r| r.protocol_id == args.protocol_id)
+            .ok_or_else(|| anyhow::anyhow!("Protocol evaluation failed"))?;
+
+        println!("Triggered: {}", if result.triggered { "YES" } else { "NO" });
+        println!();
+
+        if !result.matched_conditions.is_empty() {
+            println!("Matched conditions:");
+            for cond in &result.matched_conditions {
+                println!("  - {}", cond);
+            }
+            println!();
+        }
+
+        if !result.actions.is_empty() {
+            println!("Actions (by priority):");
+            for action in &result.actions {
+                let prefix = match action.action_type.as_str() {
+                    "alert" => "[ALERT]",
+                    "suggestion" => "[SUGGESTION]",
+                    "constraint" => "[CONSTRAINT]",
+                    _ => "[ACTION]",
+                };
+                println!(
+                    "  {} {} (priority {})",
+                    prefix, action.message, action.priority
+                );
+                if let Some(rationale) = &action.rationale {
+                    println!("    Rationale: {}", rationale);
+                }
+            }
+        }
+    }
     Ok(())
 }
 
@@ -979,12 +1063,12 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
     Ok(())
 }
 
-/// Parse a dose string (e.g., "400mg", "2.5g", "10ml", "50mcg") into milligrams as f64
+/// Parse a dose string (e.g., "400mg", "2.5g", "10ml", "50mcg", "5000IU") into milligrams as f64
 fn parse_dose(s: &str) -> Result<f64> {
     let s = s.trim().to_lowercase();
     if s.is_empty() {
         anyhow::bail!(
-            "Dose cannot be empty. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)"
+            "Dose cannot be empty. Use format like '400mg', '2.5g', '10ml', '5000iu', or '400' (assumes mg)"
         );
     }
     if s.ends_with("mcg") || s.ends_with("µg") {
@@ -1012,10 +1096,16 @@ fn parse_dose(s: &str) -> Result<f64> {
             .parse::<f64>()
             .map(|v| v * 1000.0)
             .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '10ml'", s))
+    } else if s.ends_with("iu") {
+        // International Units - treat as-is (no conversion to mg since it varies by substance)
+        let num_part = s.trim_end_matches("iu");
+        num_part
+            .parse::<f64>()
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '5000iu'", s))
     } else {
         // Assume mg for bare numbers
         s.parse::<f64>()
-            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '400mg', '2.5g', '10ml', or '400' (assumes mg)", s))
+            .map_err(|_| anyhow::anyhow!("Invalid dose format: '{}'. Use format like '400mg', '2.5g', '10ml', '5000iu', or '400' (assumes mg)", s))
     }
 }
 

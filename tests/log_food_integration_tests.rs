@@ -1,4 +1,4 @@
-use biohack::cli::{LogCommands, FoodArgs};
+use biohack::cli::{FoodArgs, LogCommands};
 use biohack::commands::handle_log_food;
 use biohack::db::Database;
 use chrono::{DateTime, Duration, Utc};

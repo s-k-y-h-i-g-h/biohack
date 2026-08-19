@@ -76,15 +76,15 @@ pub enum Commands {
     #[command(subcommand)]
     Substance(SubstanceCommands),
 
-    /// Manage stacks (not yet implemented)
+    /// Manage stacks
     #[command(subcommand)]
     Stack(StackCommands),
 
-    /// Safety protocol commands (not yet implemented)
+    /// Safety protocol commands
     #[command(subcommand)]
     Protocol(ProtocolCommands),
 
-    /// Generate reports (not yet implemented)
+    /// Generate reports
     Report(ReportArgs),
 
     /// Run safety check against current logs
@@ -107,7 +107,7 @@ pub enum LogCommands {
     /// At least one vital sign is required.
     Vitals(VitalsArgs),
 
-    /// Log a predefined stack (not yet implemented)
+    /// Log a predefined stack
     Stack(StackArgs),
 
     /// Log individual food intake (MVP)
@@ -303,10 +303,10 @@ pub enum StackCommands {
     /// List defined stacks
     List,
 
-    /// Show stack contents (not yet implemented)
+    /// Show stack contents
     Show(StackShowArgs),
 
-    /// Create stack from YAML file (not yet implemented)
+    /// Create stack from YAML file
     Create(StackCreateArgs),
 }
 
@@ -325,10 +325,10 @@ pub enum ProtocolCommands {
     /// List available protocols
     List,
 
-    /// Test a protocol with simulated data (not yet implemented)
+    /// Test a protocol with simulated data
     Test(ProtocolTestArgs),
 
-    /// Show protocol details (not yet implemented)
+    /// Show protocol details
     Show(ProtocolShowArgs),
 }
 

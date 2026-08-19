@@ -1,4 +1,4 @@
-use biohack::cli::{ProtocolCommands};
+use biohack::cli::ProtocolCommands;
 use biohack::commands::handle_protocol_test;
 use biohack::db::Database;
 use biohack::models::{SubstanceLog, VitalsLog};

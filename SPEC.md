@@ -60,7 +60,7 @@ quality_gates:
 - **Acceptance**: `biohack stack list` shows stacks; logging a stack creates multiple substance entries
 - **Priority**: medium
 - **Dependencies**: [REQ-001, REQ-002, REQ-003]
-- **Status**: ��� NOT STARTED
+- **Status**: ✅ COMPLETED
 
 ### REQ-008: Reporting & Export
 - **Description**: Generate markdown/CSV reports for time ranges; clinician-ready format
@@ -74,7 +74,7 @@ quality_gates:
 - **Acceptance**: All list/show commands use comfy-table with owo-colors styling
 - **Priority**: medium
 - **Dependencies**: [REQ-001]
-- **Status**: ��� PARTIAL (substance list works; other commands need formatting)
+- **Status**: ✅ COMPLETED
 
 ### REQ-010: Food Logging (MVP Stub)
 - **Description**: Log individual food items with name, amount, unit, time, notes
@@ -88,7 +88,7 @@ quality_gates:
 - **Acceptance**: `biohack show substances --days 3 --name caffeine` displays matching entries in a formatted table
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-003]
-- **Status**: ��� NOT STARTED (stub only)
+- **Status**: ✅ COMPLETED
 
 ### REQ-012: View Recent Logs — Vitals
 - **Description**: Show recent vitals logs with time range filtering
