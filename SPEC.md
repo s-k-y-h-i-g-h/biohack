@@ -133,11 +133,11 @@ quality_gates:
 - **Status**: ✅ COMPLETED
 
 ### REQ-018: Food Database (v1.1)
-- **Description**: Integrate USDA FoodData Central for nutrient lookup; track macro/micronutrients
-- **Acceptance**: `biohack log food --name "Salmon" --amount 150 --unit g` shows protein, omega-3, etc.
+- **Description**: Integrate OpenFoodFacts (primary, UK branded foods) + USDA FoodData Central (fallback, generic ingredients) for nutrient lookup; track macro/micronutrients
+- **Acceptance**: `biohack log food --name "Tesco Chicken Tikka Masala" --amount 400 --unit g` searches OpenFoodFacts first, falls back to USDA, displays nutrient breakdown, stores source + nutrient data; `biohack report` includes nutrient totals & daily breakdown
 - **Priority**: medium
 - **Dependencies**: [REQ-010]
-- **Status**: ✅ COMPLETED — USDA client & `biohack show food-search` implemented; `biohack log food` now searches USDA, displays nutrient breakdown, stores FDC ID + nutrients; `biohack report` includes nutrient totals & daily breakdown
+- **Status**: 🔄 PARTIAL — USDA client & `biohack show food-search` implemented; OpenFoodFacts integration pending (Task 50d); `biohack log food` searches USDA, displays nutrient breakdown, stores FDC ID + nutrients; `biohack report` includes nutrient totals & daily breakdown
 
 ### REQ-019: Protocol YAML Versioning & Migration
 - **Description**: Versioned protocol YAMLs with migration support for safe updates
@@ -152,3 +152,17 @@ quality_gates:
 - **Priority**: high
 - **Dependencies**: [REQ-011, REQ-012, REQ-013]
 - **Status**: ✅ COMPLETED
+
+### REQ-021: Nutrient Tracking & Deficiency/Excess Detection (v1.1)
+- **Description**: Track daily nutrient intake against RDI/DRI reference values; detect and display deficiencies and excesses
+- **Acceptance**: `biohack nutrient status --days 7` shows nutrient intake vs. RDI with deficiency/excess highlighting; reports include deficiency/excess summary
+- **Priority**: medium
+- **Dependencies**: [REQ-018]
+- **Status**: 📋 PLANNED v1.1
+
+### REQ-022: OpenFoodFacts Integration (v1.1)
+- **Description**: Integrate OpenFoodFacts API as primary UK food database (barcode + search) for branded UK supermarket foods; fallback to USDA for generic ingredients
+- **Acceptance**: `biohack log food --name "Tesco Chicken Tikka Masala" --amount 400 --unit g` searches OpenFoodFacts first (by name/barcode), falls back to USDA, displays nutrient breakdown, stores source (OFF/USDA) + nutrient data; `biohack show food-search` searches both APIs
+- **Priority**: high
+- **Dependencies**: [REQ-010]
+- **Status**: 📋 PLANNED v1.1
