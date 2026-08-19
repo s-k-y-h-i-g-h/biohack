@@ -85,7 +85,7 @@ quality_gates:
 
 ### REQ-011: View Recent Logs — Substances
 - **Description**: Show recent substance logs with filtering by name and time range
-- **Acceptance**: `biohack show substances --days 3 --name caffeine` displays matching entries in a formatted table
+- **Acceptance**: `biohack show substances --days 3 --name caffeine` displays matching entries in a formatted table with a "Time Ago" column showing elapsed time since each log entry
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-003]
 - **Status**: ✅ COMPLETED

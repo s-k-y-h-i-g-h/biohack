@@ -40,6 +40,7 @@
 - [x] Task 11: Implement database query for recent substance logs with filtering
 - [x] Task 12: Implement `biohack show substances --days N --name NAME` command with formatted table output
 - [x] Task 13: Add unit tests for substance log queries
+- [x] Task 14: Add "Time Ago" column to show elapsed time since each log entry
 
 **Checkpoint: View Substances** ����������� ���������
 - [x] Tests pass: `cargo test`

@@ -219,6 +219,9 @@ pub enum ShowCommands {
 
     /// Show all logs combined timeline
     Timeline(ShowTimelineArgs),
+
+    /// Search USDA FoodData Central for foods and nutrients
+    FoodSearch(FoodSearchArgs),
 }
 
 #[derive(Args, Debug)]
@@ -244,6 +247,16 @@ pub struct ShowTimelineArgs {
     /// Days to look back
     #[arg(long, default_value = "3")]
     pub days: u32,
+}
+
+#[derive(Args, Debug)]
+pub struct FoodSearchArgs {
+    /// Search query
+    pub query: String,
+
+    /// Maximum results to show
+    #[arg(long, default_value = "10")]
+    pub limit: usize,
 }
 
 #[derive(Subcommand, Debug)]

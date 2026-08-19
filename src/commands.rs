@@ -228,12 +228,14 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
             return Ok(());
         }
 
+        let now = Utc::now();
         let mut table = Table::new();
         table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS);
         table.set_header(vec![
             "Time",
+            "Time Ago",
             "Substance",
             "Dose",
             "Route",
@@ -244,9 +246,11 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
         for log in logs {
             let category = log.category.as_deref().unwrap_or("—");
             let notes = log.notes.as_deref().unwrap_or("—");
+            let time_ago = format_duration(now.signed_duration_since(log.timestamp));
 
             table.add_row(vec![
                 Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(time_ago),
                 Cell::new(&log.substance_name),
                 Cell::new(format!("{}mg", log.dose_mg as u64)),
                 Cell::new(&log.route),
@@ -258,6 +262,35 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
         println!("{}", table);
     }
     Ok(())
+}
+
+/// Format a chrono Duration as a human-readable "time ago" string
+fn format_duration(duration: chrono::Duration) -> String {
+    let total_seconds = duration.num_seconds();
+    if total_seconds < 0 {
+        return "in the future".to_string();
+    }
+    if total_seconds < 60 {
+        return format!("{}s ago", total_seconds);
+    }
+    let minutes = total_seconds / 60;
+    if minutes < 60 {
+        return format!("{}m ago", minutes);
+    }
+    let hours = minutes / 60;
+    if hours < 24 {
+        return format!("{}h ago", hours);
+    }
+    let days = hours / 24;
+    if days < 30 {
+        return format!("{}d ago", days);
+    }
+    let months = days / 30;
+    if months < 12 {
+        return format!("{}mo ago", months);
+    }
+    let years = months / 12;
+    format!("{}y ago", years)
 }
 
 /// Show recent vitals logs
@@ -411,21 +444,176 @@ pub fn handle_show_timeline(db: &Database, args: &ShowCommands, _no_color: bool)
     Ok(())
 }
 
+/// Search USDA FoodData Central for foods and display nutrient info
+pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool) -> Result<()> {
+    // Check for USDA API key
+    let api_key = std::env::var("USDA_API_KEY")
+        .or_else(|_| std::env::var("FOODDATA_API_KEY"))
+        .map_err(|_| anyhow::anyhow!(
+            "USDA_API_KEY or FOODDATA_API_KEY environment variable not set.\n\
+            Get a free key at https://fdc.nal.usda.gov/api-key-signup"
+        ))?;
+
+    let client = crate::food_db::FoodDbClient::new(api_key);
+
+    // Use tokio runtime to run async search
+    let rt = tokio::runtime::Runtime::new()?;
+    let foods = rt.block_on(client.search_foods(&args.query))?;
+
+    if foods.is_empty() {
+        println!("{}", format!("No foods found matching '{}'", args.query).yellow());
+        return Ok(());
+    }
+
+    // Display search results
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .apply_modifier(UTF8_ROUND_CORNERS)
+        .set_header(vec!["FDC ID", "Description", "Category", "Data Type"]);
+
+    for food in foods.iter().take(args.limit) {
+        table.add_row(vec![
+            Cell::new(&food.fdc_id.to_string()),
+            Cell::new(&food.description),
+            Cell::new(&food.food_category.as_deref().unwrap_or("—")),
+            Cell::new(&food.data_type),
+        ]);
+    }
+
+    println!("{}", table);
+    println!();
+    println!("Use `biohack log food --name \"<description>\" --amount <n> --unit <unit>` to log a food.");
+    println!("For nutrient details, get a USDA API key and the full implementation will show macros/micros.");
+
+    Ok(())
+}
+
 pub fn handle_substance_search(
-    _db: &Database,
-    _args: &SubstanceCommands,
+    db: &Database,
+    args: &SubstanceCommands,
     _no_color: bool,
 ) -> Result<()> {
-    println!("{}", "Not yet implemented: search substances".yellow());
+    if let SubstanceCommands::Search(args) = args {
+        let results = db.search_substances(&args.query)?;
+
+        if results.is_empty() {
+            println!("{}", format!("No substances found matching '{}'", args.query).yellow());
+            return Ok(());
+        }
+
+        let mut table = Table::new();
+        table
+            .load_preset(UTF8_FULL)
+            .apply_modifier(UTF8_ROUND_CORNERS)
+            .set_header(vec!["Name", "Category", "Typical Dose", "Half-life", "Contraindications"]);
+
+        for substance in results {
+            let typical_dose = substance
+                .typical_dose_mg
+                .map(|d| format!("{d}mg"))
+                .unwrap_or_else(|| "—".to_string());
+            let half_life = substance
+                .half_life_hours
+                .map(|h| format!("{h:.1}h"))
+                .unwrap_or_else(|| "—".to_string());
+            let contraindications = if substance.contraindications.is_empty() {
+                "—".to_string()
+            } else {
+                substance.contraindications.join(", ")
+            };
+
+            table.add_row(vec![
+                Cell::new(&substance.name),
+                Cell::new(&substance.category.to_string()),
+                Cell::new(&typical_dose),
+                Cell::new(&half_life),
+                Cell::new(&contraindications),
+            ]);
+        }
+
+        println!("{}", table);
+    }
     Ok(())
 }
 
 pub fn handle_substance_show(
-    _db: &Database,
-    _args: &SubstanceCommands,
+    db: &Database,
+    args: &SubstanceCommands,
     _no_color: bool,
 ) -> Result<()> {
-    println!("{}", "Not yet implemented: show substance details".yellow());
+    if let SubstanceCommands::Show(args) = args {
+        let substance = db.get_substance_by_name(&args.name)?;
+
+        match substance {
+            Some(s) => {
+                println!(
+                    "{}",
+                    format!("═══════════════════════════════════════").bold()
+                );
+                println!(
+                    "{}",
+                    format!("  Substance: {}", s.name).bold().green()
+                );
+                println!(
+                    "{}",
+                    format!("═══════════════════════════════════════").bold()
+                );
+                println!();
+                println!("  ID: {}", s.id);
+                println!("  Category: {}", s.category);
+                if !s.aliases.is_empty() {
+                    println!("  Aliases: {}", s.aliases.join(", "));
+                }
+                println!();
+                println!("  Dose Range:");
+                if let Some(min) = s.min_dose_mg {
+                    println!("    Min: {min}mg");
+                }
+                if let Some(max) = s.max_dose_mg {
+                    println!("    Max: {max}mg");
+                }
+                if let Some(typical) = s.typical_dose_mg {
+                    println!("    Typical: {typical}mg");
+                }
+                if let Some(hl) = s.half_life_hours {
+                    println!("  Half-life: {hl:.1}h");
+                }
+                println!();
+                if !s.contraindications.is_empty() {
+                    println!("  Contraindications:");
+                    for c in &s.contraindications {
+                        println!("    - {c}");
+                    }
+                    println!();
+                }
+                if !s.interactions.is_empty() {
+                    println!("  Known Interactions:");
+                    for i in &s.interactions {
+                        println!("    - {i}");
+                    }
+                    println!();
+                }
+                if let Some(notes) = &s.notes {
+                    println!("  Notes: {notes}");
+                    println!();
+                }
+                if !s.sources.is_empty() {
+                    println!("  Sources:");
+                    for src in &s.sources {
+                        println!("    - {src}");
+                    }
+                }
+            }
+            None => {
+                println!(
+                    "{}",
+                    format!("Substance '{}' not found in database", args.name).red()
+                );
+                println!("Try 'biohack substance list' to see available substances");
+            }
+        }
+    }
     Ok(())
 }
 
@@ -616,8 +804,55 @@ pub fn handle_log_stack(db: &Database, args: &LogCommands, _no_color: bool) -> R
     Ok(())
 }
 
-pub fn handle_check(_db: &Database, _no_color: bool) -> Result<()> {
-    println!("{}", "������� Safety check: no protocols triggered".green());
+pub fn handle_check(db: &Database, _no_color: bool) -> Result<()> {
+    let mut engine = ProtocolEngine::new();
+    engine.load_builtin_protocols()?;
+
+    // Get recent data for evaluation
+    let recent_substances = db.get_recent_substance_logs(24, None)?;
+    let recent_vitals = db.get_recent_vitals_logs(24)?;
+    let current_vitals = recent_vitals.first().cloned();
+
+    let ctx = ProtocolContext {
+        recent_substances,
+        recent_vitals,
+        current_vitals,
+    };
+
+    let results = engine.evaluate(&ctx);
+    let triggered: Vec<_> = results.iter().filter(|r| r.triggered).collect();
+
+    if triggered.is_empty() {
+        println!("{}", "✅ Safety check: no protocols triggered".green());
+    } else {
+        for result in triggered {
+            println!(
+                "{}",
+                format!(
+                    "🚨 {} TRIGGERED: {}",
+                    result.protocol_name, result.protocol_id
+                )
+                .red()
+                .bold()
+            );
+            for cond in &result.matched_conditions {
+                println!("  - Matched: {}", cond);
+            }
+            for action in &result.actions {
+                let prefix = match action.action_type.as_str() {
+                    "alert" => "[ALERT]",
+                    "suggestion" => "[SUGGESTION]",
+                    "constraint" => "[CONSTRAINT]",
+                    _ => "[ACTION]",
+                };
+                println!("  {} {} (priority {})", prefix, action.message, action.priority);
+                if let Some(rationale) = &action.rationale {
+                    println!("    Rationale: {}", rationale);
+                }
+            }
+            println!();
+        }
+    }
     Ok(())
 }
 

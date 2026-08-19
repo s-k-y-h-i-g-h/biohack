@@ -4,6 +4,7 @@
 mod cli;
 mod commands;
 mod db;
+mod food_db;
 mod models;
 mod protocols;
 
@@ -37,6 +38,9 @@ fn main() -> Result<()> {
             ShowCommands::Vitals { .. } => commands::handle_show_vitals(&db, &cmd, cli.no_color)?,
             ShowCommands::Timeline { .. } => {
                 commands::handle_show_timeline(&db, &cmd, cli.no_color)?
+            }
+            ShowCommands::FoodSearch(args) => {
+                commands::handle_food_search(&db, &args, cli.no_color)?
             }
         },
 

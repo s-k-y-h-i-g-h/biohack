@@ -41,6 +41,9 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# HTTP client for USDA FoodData Central API
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
 [dev-dependencies]
 tempfile = "3.8"
 predicates = "3.0"
