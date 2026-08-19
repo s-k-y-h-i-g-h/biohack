@@ -139,8 +139,9 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 - [x] Task 50a: Food database integration (USDA FoodData Central) — **search client & `biohack show food-search` implemented**
 - [x] Task 50b: Nutrient display on `biohack log food` (scale USDA data to user amount/unit)
 - [x] Task 50c: Daily nutrient totals & reporting integration
-- [ ] Task 50d: OpenFoodFacts integration — search client & barcode lookup for UK branded foods
-- [ ] Task 50e: Multi-source food lookup — OpenFoodFacts primary (UK), USDA fallback (generic)
+- [x] Task 50d: OpenFoodFacts integration — search client & barcode lookup for UK branded foods
+- [x] Task 50e: Multi-source food lookup — OpenFoodFacts primary (UK), USDA fallback (generic)
+- [x] Task 50f: Nutrient completeness tracking — shows macros vs micros coverage per source
 - [ ] Task 51a: Nutrient RDI/DRI reference data (embedded in code or loaded from file)
 - [ ] Task 51b: Daily nutrient status calculation (intake vs RDI with %)
 - [ ] Task 51c: `biohack nutrient status --days N` CLI command with deficiency/excess highlighting

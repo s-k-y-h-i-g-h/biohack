@@ -589,17 +589,22 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
     table
         .load_preset(UTF8_FULL)
         .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec!["ID", "Description", "Brand", "Category", "Source", "Has Nutrients"]);
+        .set_header(vec!["ID", "Description", "Brand", "Category", "Source", "Nutrients", "Completeness"]);
 
     for food in foods.iter().take(args.limit) {
         let has_nutrients = food.nutrients_per_100g.is_some();
+        let nutrient_count = food.nutrients_per_100g.as_ref().map(|n| n.len()).unwrap_or(0);
+        let completeness = food.nutrient_completeness.as_ref()
+            .map(|c| c.summary())
+            .unwrap_or_else(|| "unknown".to_string());
         table.add_row(vec![
             Cell::new(&food.id),
             Cell::new(&food.description),
             Cell::new(&food.brand.as_deref().unwrap_or("—")),
             Cell::new(&food.category.as_deref().unwrap_or("—")),
             Cell::new(food.source.as_str()),
-            Cell::new(if has_nutrients { "✓" } else { "✗" }),
+            Cell::new(&nutrient_count.to_string()),
+            Cell::new(&completeness),
         ]);
     }
 
@@ -607,6 +612,9 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
     println!();
     println!("Use `biohack log food --name \"<description>\" --amount <n> --unit <unit>` to log a food.");
     println!("For nutrient details, the tool will search OpenFoodFacts first (UK branded), then USDA (generic).");
+    println!();
+    println!("Completeness: [macros only] = energy/protein/fat/carbs/fiber/sugars/sodium only");
+    println!("              [micros ✓] = includes potassium/magnesium/calcium/vitamins/etc.");
 
     Ok(())
 }

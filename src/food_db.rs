@@ -50,6 +50,8 @@ pub struct FoodResult {
     pub source: FoodDataSource,
     /// Nutrients per 100g (when available)
     pub nutrients_per_100g: Option<Vec<FoodNutrient>>,
+    /// Track which nutrients came from which source
+    pub nutrient_completeness: Option<NutrientCompleteness>,
 }
 
 /// Nutrient within a food
@@ -67,6 +69,36 @@ pub struct NutrientInfo {
     pub name: String,
     pub amount: f64,
     pub unit: String,
+}
+
+/// Tracks which nutrients are available from which data source
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct NutrientCompleteness {
+    /// Nutrient IDs found in OpenFoodFacts
+    pub openfoodfacts: Vec<i64>,
+    /// Nutrient IDs found in USDA
+    pub usda: Vec<i64>,
+    /// Nutrient IDs missing from both sources
+    pub missing: Vec<i64>,
+}
+
+impl NutrientCompleteness {
+    /// Check if we have micronutrients (beyond basic macros)
+    pub fn has_micronutrients(&self) -> bool {
+        let macro_ids = [1008, 1003, 1004, 1005, 1079, 2000, 1093]; // Energy, Protein, Fat, Carbs, Fiber, Sugars, Sodium
+        let all_found: Vec<i64> = self.openfoodfacts.iter().chain(self.usda.iter()).cloned().collect();
+        KEY_NUTRIENTS.iter().any(|(_, _, id)| {
+            !macro_ids.contains(id) && all_found.contains(id)
+        })
+    }
+
+    /// Get a summary string for display
+    pub fn summary(&self) -> String {
+        let total = KEY_NUTRIENTS.len();
+        let found = self.openfoodfacts.len() + self.usda.len();
+        let micro = self.has_micronutrients();
+        format!("{}/{} nutrients{}", found, total, if micro { " [micros ✓]" } else { " [macros only]" })
+    }
 }
 
 /// Key nutrients we care about for biohacking display (matches USDA nutrient IDs)
@@ -190,7 +222,16 @@ impl FoodDbClient {
         let mut results = Vec::new();
         for product in search_response.products {
             if let Some(name) = product.product_name {
-                let nutrients = self.parse_off_nutrients(&product.nutrients);
+                let (nutrients, found_ids) = self.parse_off_nutrients(&product.nutrients);
+                let mut completeness = NutrientCompleteness::default();
+                completeness.openfoodfacts = found_ids;
+                // Mark missing nutrients
+                let all_found: std::collections::HashSet<i64> = completeness.openfoodfacts.iter().cloned().collect();
+                completeness.missing = KEY_NUTRIENTS.iter()
+                    .map(|(_, _, id)| *id)
+                    .filter(|id| !all_found.contains(id))
+                    .collect();
+
                 results.push(FoodResult {
                     id: product.code,
                     description: name,
@@ -198,6 +239,7 @@ impl FoodDbClient {
                     category: product.categories,
                     source: FoodDataSource::OpenFoodFacts,
                     nutrients_per_100g: nutrients,
+                    nutrient_completeness: Some(completeness),
                 });
             }
         }
@@ -206,9 +248,14 @@ impl FoodDbClient {
     }
 
     /// Parse OpenFoodFacts nutrients (per 100g) into our format
-    fn parse_off_nutrients(&self, nutrients: &Option<serde_json::Value>) -> Option<Vec<FoodNutrient>> {
-        let nutrients = nutrients.as_ref()?;
+    /// Returns (nutrients, found_nutrient_ids)
+    fn parse_off_nutrients(&self, nutrients: &Option<serde_json::Value>) -> (Option<Vec<FoodNutrient>>, Vec<i64>) {
+        let nutrients = match nutrients.as_ref() {
+            Some(n) => n,
+            None => return (None, Vec::new()),
+        };
         let mut result = Vec::new();
+        let mut found_ids = Vec::new();
 
         // Map OpenFoodFacts nutrient fields to our nutrient IDs
         let nutrient_map: &[(&str, i64, &str)] = &[
@@ -256,12 +303,13 @@ impl FoodDbClient {
                             unit: unit.to_string(),
                             amount,
                         });
+                        found_ids.push(*nutrient_id);
                     }
                 }
             }
         }
 
-        if result.is_empty() { None } else { Some(result) }
+        if result.is_empty() { (None, found_ids) } else { (Some(result), found_ids) }
     }
 
     /// Map USDA nutrient ID to display name
@@ -336,16 +384,31 @@ impl FoodDbClient {
 
         let mut results = Vec::new();
         for food in search_response.foods {
-            let nutrients = food.food_nutrients.map(|n| {
-                n.into_iter()
-                    .map(|fnut| FoodNutrient {
-                        nutrient_id: fnut.nutrient_id,
-                        name: fnut.nutrient_name,
-                        unit: fnut.unit_name,
-                        amount: fnut.amount,
+            let (nutrients, found_ids) = food.food_nutrients.map(|n| {
+                let mut found = Vec::new();
+                let nutrients: Vec<FoodNutrient> = n.into_iter()
+                    .map(|fnut| {
+                        if fnut.amount > 0.0 {
+                            found.push(fnut.nutrient_id);
+                        }
+                        FoodNutrient {
+                            nutrient_id: fnut.nutrient_id,
+                            name: fnut.nutrient_name,
+                            unit: fnut.unit_name,
+                            amount: fnut.amount,
+                        }
                     })
-                    .collect()
-            });
+                    .collect();
+                (Some(nutrients), found)
+            }).unwrap_or((None, Vec::new()));
+
+            let mut completeness = NutrientCompleteness::default();
+            completeness.usda = found_ids.clone();
+            let all_found: std::collections::HashSet<i64> = found_ids.iter().cloned().collect();
+            completeness.missing = KEY_NUTRIENTS.iter()
+                .map(|(_, _, id)| *id)
+                .filter(|id| !all_found.contains(id))
+                .collect();
 
             results.push(FoodResult {
                 id: food.fdc_id.to_string(),
@@ -354,6 +417,7 @@ impl FoodDbClient {
                 category: food.food_category,
                 source: FoodDataSource::USDA,
                 nutrients_per_100g: nutrients,
+                nutrient_completeness: Some(completeness),
             });
         }
 
@@ -424,7 +488,15 @@ impl FoodDbClient {
         }
 
         let product = product_response.product.unwrap();
-        let nutrients = self.parse_off_nutrients(&product.nutrients);
+        let (nutrients, found_ids) = self.parse_off_nutrients(&product.nutrients);
+
+        let mut completeness = NutrientCompleteness::default();
+        completeness.openfoodfacts = found_ids;
+        let all_found: std::collections::HashSet<i64> = completeness.openfoodfacts.iter().cloned().collect();
+        completeness.missing = KEY_NUTRIENTS.iter()
+            .map(|(_, _, id)| *id)
+            .filter(|id| !all_found.contains(id))
+            .collect();
 
         Ok(FoodResult {
             id: product.code,
@@ -433,6 +505,7 @@ impl FoodDbClient {
             category: product.categories,
             source: FoodDataSource::OpenFoodFacts,
             nutrients_per_100g: nutrients,
+            nutrient_completeness: Some(completeness),
         })
     }
 
@@ -483,16 +556,31 @@ impl FoodDbClient {
             .await
             .context("Failed to parse USDA API response")?;
 
-        let nutrients = food.food_nutrients.map(|n| {
-            n.into_iter()
-                .map(|fnut| FoodNutrient {
-                    nutrient_id: fnut.nutrient_id,
-                    name: fnut.nutrient_name,
-                    unit: fnut.unit_name,
-                    amount: fnut.amount,
+        let (nutrients, found_ids) = food.food_nutrients.map(|n| {
+            let mut found = Vec::new();
+            let nutrients: Vec<FoodNutrient> = n.into_iter()
+                .map(|fnut| {
+                    if fnut.amount > 0.0 {
+                        found.push(fnut.nutrient_id);
+                    }
+                    FoodNutrient {
+                        nutrient_id: fnut.nutrient_id,
+                        name: fnut.nutrient_name,
+                        unit: fnut.unit_name,
+                        amount: fnut.amount,
+                    }
                 })
-                .collect()
-        });
+                .collect();
+            (Some(nutrients), found)
+        }).unwrap_or((None, Vec::new()));
+
+        let mut completeness = NutrientCompleteness::default();
+        completeness.usda = found_ids.clone();
+        let all_found: std::collections::HashSet<i64> = found_ids.iter().cloned().collect();
+        completeness.missing = KEY_NUTRIENTS.iter()
+            .map(|(_, _, id)| *id)
+            .filter(|id| !all_found.contains(id))
+            .collect();
 
         Ok(FoodResult {
             id: food.fdc_id.to_string(),
@@ -501,6 +589,7 @@ impl FoodDbClient {
             category: food.food_category,
             source: FoodDataSource::USDA,
             nutrients_per_100g: nutrients,
+            nutrient_completeness: Some(completeness),
         })
     }
 

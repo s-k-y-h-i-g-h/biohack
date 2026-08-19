@@ -137,7 +137,7 @@ quality_gates:
 - **Acceptance**: `biohack log food --name "Tesco Chicken Tikka Masala" --amount 400 --unit g` searches OpenFoodFacts first, falls back to USDA, displays nutrient breakdown, stores source + nutrient data; `biohack report` includes nutrient totals & daily breakdown
 - **Priority**: medium
 - **Dependencies**: [REQ-010]
-- **Status**: 🔄 PARTIAL — USDA client & `biohack show food-search` implemented; OpenFoodFacts integration pending (Task 50d); `biohack log food` searches USDA, displays nutrient breakdown, stores FDC ID + nutrients; `biohack report` includes nutrient totals & daily breakdown
+- **Status**: 🔄 PARTIAL — USDA client & `biohack show food-search` implemented; OpenFoodFacts integration complete (Task 50d); multi-source lookup complete (Task 50e); `biohack log food` searches both APIs, displays nutrient breakdown, stores source + nutrient data; `biohack report` includes nutrient totals & daily breakdown; **nutrient completeness tracking added** (shows macros vs micros coverage)
 
 ### REQ-019: Protocol YAML Versioning & Migration
 - **Description**: Versioned protocol YAMLs with migration support for safe updates
@@ -165,4 +165,4 @@ quality_gates:
 - **Acceptance**: `biohack log food --name "Tesco Chicken Tikka Masala" --amount 400 --unit g` searches OpenFoodFacts first (by name/barcode), falls back to USDA, displays nutrient breakdown, stores source (OFF/USDA) + nutrient data; `biohack show food-search` searches both APIs
 - **Priority**: high
 - **Dependencies**: [REQ-010]
-- **Status**: 📋 PLANNED v1.1
+- **Status**: ✅ COMPLETED — OpenFoodFacts search + barcode lookup implemented; multi-source fallback (OFF → USDA) working; nutrient completeness tracking added
