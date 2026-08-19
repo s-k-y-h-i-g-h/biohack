@@ -144,7 +144,7 @@ quality_gates:
 - **Acceptance**: `biohack protocol migrate` upgrades protocol files safely
 - **Priority**: medium
 - **Dependencies**: [REQ-006]
-- **Status**: ��� PLANNED v1.1
+- **Status**: ✅ COMPLETED — Implemented database storage for protocols, migration logic with version tiering (1.0→1.1→1.2→2.0), CLI commands (`biohack protocol migrate`, `biohack protocol seed`), and integration with protocol engine
 
 ### REQ-020: Remove Log Entries
 - **Description**: Remove individual log entries (substances, vitals, food) by ID
