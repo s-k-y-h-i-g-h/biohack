@@ -1064,7 +1064,7 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
 }
 
 /// Parse a dose string (e.g., "400mg", "2.5g", "10ml", "50mcg", "5000IU") into milligrams as f64
-fn parse_dose(s: &str) -> Result<f64> {
+pub fn parse_dose(s: &str) -> Result<f64> {
     let s = s.trim().to_lowercase();
     if s.is_empty() {
         anyhow::bail!(
@@ -1119,11 +1119,19 @@ fn format_dose(mg: f64) -> String {
 }
 
 /// Parse an optional timestamp string into a DateTime<Utc>
-fn parse_time(s: &Option<String>) -> Result<DateTime<Utc>> {
+pub fn parse_time(s: &Option<String>) -> Result<DateTime<Utc>> {
     Ok(match s {
-        Some(t) => DateTime::parse_from_rfc3339(t)
-            .map(|dt| dt.with_timezone(&Utc))
-            .map_err(|_| anyhow::anyhow!("Invalid timestamp format: '{}'. Use ISO 8601 format like '2024-01-15T10:30:00Z' or '2024-01-15'", t))?,
+        Some(t) => {
+            // Try RFC3339 first
+            DateTime::parse_from_rfc3339(t)
+                .map(|dt| dt.with_timezone(&Utc))
+                .or_else(|_| {
+                    // Try date-only format (YYYY-MM-DD)
+                    chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d")
+                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
+                })
+                .map_err(|_| anyhow::anyhow!("Invalid timestamp format: '{}'. Use ISO 8601 format like '2024-01-15T10:30:00Z' or '2024-01-15'", t))?
+        }
         None => Utc::now(),
     })
 }

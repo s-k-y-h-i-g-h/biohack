@@ -128,12 +128,12 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 **Checkpoint: CLI Integration Tests** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 12: Protocol Engine & Testing (v1.0)
-- [ ] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
-- [ ] Task 47: Write integration tests for CLI commands
-- [ ] Task 48: Set up GitHub Actions CI
-- [ ] Task 49: Property-based tests for protocol evaluation
+- [x] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
+- [x] Task 47: Write integration tests for CLI commands
+- [x] Task 48: Set up GitHub Actions CI
+- [x] Task 49: Property-based tests for protocol evaluation
 
-**Checkpoint: Tests & CI** ������������������� ����������������� ����������������� ���������������
+**Checkpoint: Tests & CI** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 13: v1.1 Features (Planned)
 - [ ] Task 50: Food database integration (USDA FoodData Central)
