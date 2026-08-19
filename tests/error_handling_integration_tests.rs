@@ -1,12 +1,8 @@
-use biohack::cli::{Commands, FoodArgs, LogCommands, SubstanceArgs, SubstanceCommands, VitalsArgs};
+use biohack::cli::{FoodArgs, LogCommands, SubstanceArgs, VitalsArgs};
 use biohack::commands::{
     handle_check, handle_log_food, handle_log_substance, handle_log_vitals, handle_substance_seed,
 };
 use biohack::db::Database;
-use chrono::{Duration, Utc};
-use std::fs;
-use tempfile::tempdir;
-use uuid::Uuid;
 
 #[cfg(test)]
 mod error_handling_integration_tests {
@@ -115,7 +111,7 @@ mod error_handling_integration_tests {
         let args = biohack::cli::SubstanceSeedArgs {
             path: std::path::PathBuf::from("non_existent.yaml"),
         };
-        let cmd = SubstanceCommands::Seed(args);
+        let cmd = biohack::cli::SubstanceCommands::Seed(args);
 
         let result = handle_substance_seed(&db, &cmd, false);
         assert!(result.is_err());
@@ -159,7 +155,7 @@ mod error_handling_integration_tests {
         let result = Database::new(Some(db_path));
         // This should succeed
         assert!(result.is_ok());
-        
+
         // And we should be able to use it
         let db = result.unwrap();
         let substances = db.list_substances(None).unwrap();

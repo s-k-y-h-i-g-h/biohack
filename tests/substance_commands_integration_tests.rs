@@ -1,11 +1,12 @@
 use biohack::cli::{SubstanceCommands, SubstanceSeedArgs};
-use biohack::commands::{handle_substance_list, handle_substance_seed, handle_substance_show, handle_substance_search};
+use biohack::commands::{
+    handle_substance_list, handle_substance_search, handle_substance_seed, handle_substance_show,
+};
 use biohack::db::Database;
-use chrono::{Duration, Utc};
 use std::fs;
 use std::io::Write;
+#[allow(unused_imports)]
 use tempfile::tempdir;
-use uuid::Uuid;
 
 #[cfg(test)]
 mod substance_commands_integration_tests {

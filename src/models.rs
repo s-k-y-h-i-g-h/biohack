@@ -154,6 +154,7 @@ pub struct Stack {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub enum ProtocolTriggerType {
     AllOf,
     AnyOf,
@@ -162,6 +163,7 @@ pub enum ProtocolTriggerType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ProtocolCondition {
     pub trigger_type: ProtocolTriggerType,
     pub conditions: Vec<ProtocolCondition>,
@@ -171,6 +173,7 @@ pub struct ProtocolCondition {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ProtocolAction {
     pub action_type: String,
     pub priority: u32,
@@ -179,6 +182,7 @@ pub struct ProtocolAction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct Protocol {
     pub id: String,
     pub name: String,

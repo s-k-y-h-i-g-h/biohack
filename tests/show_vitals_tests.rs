@@ -111,7 +111,7 @@ mod show_vitals_tests {
                 dbp: Some(70 + i),
                 temperature_c: Some(36.5 + i as f32 * 0.1),
                 spo2: Some(98),
-                hrv_rmssd: Some(40 + i as u32),
+                hrv_rmssd: Some(40 + i),
                 weight_kg: Some(70.0 + i as f32 * 0.5),
                 timestamp: Utc::now() - Duration::hours(i as i64),
                 notes: Some(format!("Log {}", i)),

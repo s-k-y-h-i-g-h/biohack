@@ -3,7 +3,6 @@ use biohack::commands::handle_log_substance;
 use biohack::db::Database;
 use biohack::models::Substance;
 use chrono::{DateTime, Duration, Utc};
-use tempfile::tempdir;
 use uuid::Uuid;
 
 #[cfg(test)]

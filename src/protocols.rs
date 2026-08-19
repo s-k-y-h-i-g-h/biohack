@@ -10,6 +10,7 @@ use crate::models::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ProtocolContext {
     pub recent_substances: Vec<SubstanceLog>,
     pub recent_vitals: Vec<VitalsLog>,
@@ -17,6 +18,7 @@ pub struct ProtocolContext {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ProtocolResult {
     pub protocol_id: String,
     pub protocol_name: String,
@@ -25,6 +27,7 @@ pub struct ProtocolResult {
     pub actions: Vec<ProtocolAction>,
 }
 
+#[allow(dead_code)]
 pub struct ProtocolEngine {
     pub protocols: Vec<Protocol>,
 }
@@ -35,6 +38,7 @@ impl Default for ProtocolEngine {
     }
 }
 
+#[allow(dead_code)]
 impl ProtocolEngine {
     pub fn new() -> Self {
         Self {

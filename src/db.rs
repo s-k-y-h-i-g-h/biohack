@@ -36,6 +36,7 @@ pub struct Database {
     substance_logs: Tree,
     vitals_logs: Tree,
     stacks: Tree,
+    #[allow(dead_code)]
     protocols: Tree,
 }
 
@@ -112,6 +113,7 @@ impl Database {
         Ok(None)
     }
 
+    #[allow(dead_code)]
     pub fn search_substances(&self, query: &str) -> Result<Vec<Substance>> {
         let query_lower = query.to_lowercase();
         let mut results = Vec::new();
@@ -257,6 +259,7 @@ impl Database {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_recent_food_logs(
         &self,
         days: u32,
@@ -298,6 +301,7 @@ impl Database {
             }
             // Try to deserialize as FoodLog
             else if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     results.push(TimelineEntry::Food(log));
                 }
@@ -308,6 +312,7 @@ impl Database {
         for item in self.vitals_logs.iter().rev() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     results.push(TimelineEntry::Vitals(log));
                 }
@@ -315,7 +320,7 @@ impl Database {
         }
 
         // Sort by timestamp descending (most recent first)
-        results.sort_by(|a, b| b.timestamp().cmp(&a.timestamp()));
+        results.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
 
         Ok(results)
     }
@@ -332,6 +337,7 @@ impl Database {
         for item in self.substance_logs.iter() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     substance_count += 1;
                     unique_substances.insert(log.substance_name.clone());
@@ -343,6 +349,7 @@ impl Database {
         for item in self.vitals_logs.iter() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     vitals_count += 1;
                 }
@@ -353,6 +360,7 @@ impl Database {
         for item in self.substance_logs.iter() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     food_count += 1;
                 }
@@ -376,6 +384,7 @@ impl Database {
         for item in self.substance_logs.iter().rev() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<SubstanceLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     results.push(log);
                 }
@@ -395,6 +404,7 @@ impl Database {
         for item in self.vitals_logs.iter().rev() {
             let (_, value) = item?;
             if let Ok(log) = self.deserialize::<VitalsLog>(&value) {
+                #[allow(clippy::collapsible_if)]
                 if log.timestamp >= since {
                     results.push(log);
                 }
@@ -413,10 +423,11 @@ impl Database {
 
         for item in self.substance_logs.iter().rev() {
             let (_, value) = item?;
-            if let Ok(log) = self.deserialize::<FoodLog>(&value)
-                && log.timestamp >= since
-            {
-                results.push(log);
+            if let Ok(log) = self.deserialize::<FoodLog>(&value) {
+                #[allow(clippy::collapsible_if)]
+                if log.timestamp >= since {
+                    results.push(log);
+                }
             }
         }
 
@@ -429,6 +440,7 @@ impl Database {
 /// Summary statistics for report header
 #[derive(Debug, Clone)]
 pub struct ReportSummary {
+    #[allow(dead_code)]
     pub days: u32,
     pub substance_logs: usize,
     pub vitals_logs: usize,

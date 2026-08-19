@@ -2,8 +2,8 @@ use biohack::cli::{LogCommands, VitalsArgs};
 use biohack::commands::handle_log_vitals;
 use biohack::db::Database;
 use chrono::{DateTime, Duration, Utc};
+#[allow(unused_imports)]
 use tempfile::tempdir;
-use uuid::Uuid;
 
 #[cfg(test)]
 mod log_vitals_integration_tests {

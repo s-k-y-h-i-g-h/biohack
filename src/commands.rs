@@ -2,7 +2,6 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use owo_colors::OwoColorize;
-use serde_yaml;
 use std::io::Write;
 use uuid::Uuid;
 
@@ -70,7 +69,7 @@ pub fn handle_substance_list(
         for s in substances {
             let typical = s
                 .typical_dose_mg
-                .map(|v| format_dose(v))
+                .map(format_dose)
                 .unwrap_or_else(|| "—".to_string());
             let half_life = s
                 .half_life_hours
@@ -246,9 +245,9 @@ pub fn handle_show_substances(db: &Database, args: &ShowCommands, _no_color: boo
             let notes = log.notes.as_deref().unwrap_or("—");
 
             table.add_row(vec![
-                Cell::new(&log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(&log.substance_name),
-                Cell::new(&format!("{}mg", log.dose_mg as u64)),
+                Cell::new(format!("{}mg", log.dose_mg as u64)),
                 Cell::new(&log.route),
                 Cell::new(category),
                 Cell::new(notes),
@@ -318,7 +317,7 @@ pub fn handle_show_vitals(db: &Database, args: &ShowCommands, _no_color: bool) -
             let notes = log.notes.as_deref().unwrap_or("—");
 
             table.add_row(vec![
-                Cell::new(&log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
+                Cell::new(log.timestamp.format("%Y-%m-%d %H:%M").to_string()),
                 Cell::new(&hr),
                 Cell::new(&sbp),
                 Cell::new(&dbp),
@@ -654,7 +653,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
     let date_range_start = now - chrono::Duration::days(days as i64);
 
     // Header
-    report.push_str(&format!("# Biohack Health Report\n\n"));
+    report.push_str("# Biohack Health Report\n\n");
     report.push_str(&format!(
         "**Generated:** {}\n",
         now.format("%Y-%m-%d %H:%M UTC")
@@ -701,7 +700,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
                     name = item.substance_name
                 ));
             }
-            report.push_str("\n");
+            report.push('\n');
         }
     }
 
@@ -724,7 +723,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
                 notes.replace('|', "\\|")
             ));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
 
     // Vitals Logs
@@ -776,7 +775,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
                 notes.replace('|', "\\|")
             ));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
 
     // Food Logs
@@ -795,7 +794,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
                 notes.replace('|', "\\|")
             ));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
 
     // Vitals Summary (clinician-friendly)
@@ -838,7 +837,7 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
             let max_spo2 = *spo2_vals.iter().max().unwrap();
             report.push_str(&format!("- **SpO2:** range {min_spo2}–{max_spo2}%\n"));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
 
     // Substance Frequency
@@ -849,14 +848,14 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
             *freq.entry(log.substance_name.clone()).or_insert(0) += 1;
         }
         let mut freq_vec: Vec<_> = freq.into_iter().collect();
-        freq_vec.sort_by(|a, b| b.1.cmp(&a.1));
+        freq_vec.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         report.push_str("| Substance | Log Count |\n");
         report.push_str("|-----------|-----------|\n");
         for (name, count) in freq_vec {
             report.push_str(&format!("| {} | {} |\n", name, count));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
 
     // Footer
@@ -891,7 +890,7 @@ fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
                 notes
             ));
         }
-        csv.push_str("\n");
+        csv.push('\n');
     }
 
     // Vitals logs CSV
@@ -917,7 +916,7 @@ fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
                 notes
             ));
         }
-        csv.push_str("\n");
+        csv.push('\n');
     }
 
     // Food logs CSV
@@ -935,7 +934,7 @@ fn generate_csv_report(db: &Database, days: u32) -> Result<String> {
                 notes
             ));
         }
-        csv.push_str("\n");
+        csv.push('\n');
     }
 
     Ok(csv)
