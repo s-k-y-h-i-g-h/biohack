@@ -136,7 +136,9 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 **Checkpoint: Tests & CI** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 13: v1.1 Features (Planned)
-- [ ] Task 50: Food database integration (USDA FoodData Central)
+- [x] Task 50a: Food database integration (USDA FoodData Central) — **search client & `biohack show food-search` implemented**
+- [ ] Task 50b: Nutrient display on `biohack log food` (scale USDA data to user amount/unit)
+- [ ] Task 50c: Daily nutrient totals & reporting integration
 - [ ] Task 51: Nutrient tracking (macros, micros, deficiencies/excesses)
 - [ ] Task 52: Protocol YAML versioning and migration system
 - [ ] Task 53: Health platform import (Google Health, Samsung Health)
