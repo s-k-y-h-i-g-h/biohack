@@ -151,6 +151,9 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 - [ ] Task 54: Predefined meal logging
 - [ ] Task 55: TUI support via ratatui
 
+## Phase 14: Substance Database Expansion (v1.1)
+- [x] Task 56: Add Memantine, Taurine, Glycine to substance seed database (N-Acetyl-Cysteine and Creatine already present)
+
 **Checkpoint: v1.1 Complete** ������������������� ����������������� ����������������� ���������������
 
 ## Task Sizing Guidelines

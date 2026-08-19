@@ -395,3 +395,42 @@
   interactions: []
   notes: null
   sources: []
+
+- name: Memantine
+  id: "550e8400-e29b-41d4-a716-446655440028"
+  aliases: ["Namenda", "Ebixa", "1-amino-3,5-dimethyladamantane"]
+  category: Medication
+  min_dose_mg: 5
+  max_dose_mg: 20
+  typical_dose_mg: 10
+  half_life_hours: 65.0
+  contraindications: ["severe renal impairment", "seizure disorders"]
+  interactions: ["amantadine", "ketamine", "dextromethorphan", "dopamine agonists", "anticholinergics"]
+  notes: "NMDA receptor antagonist; used for moderate-severe Alzheimer's; long half-life allows once-daily dosing"
+  sources: ["FDA Label", "PubChem CID 4059"]
+
+- name: Taurine
+  id: "550e8400-e29b-41d4-a716-446655440029"
+  aliases: ["2-aminoethanesulfonic acid", "L-taurine"]
+  category: Supplement
+  min_dose_mg: 500
+  max_dose_mg: 3000
+  typical_dose_mg: 1000
+  half_life_hours: 1.5
+  contraindications: ["severe renal impairment"]
+  interactions: ["lithium", "diuretics"]
+  notes: "Conditionally essential amino acid; supports cardiovascular function, bile salt formation, osmoregulation; common in energy drinks"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 1123"]
+
+- name: Glycine
+  id: "550e8400-e29b-41d4-a716-446655440030"
+  aliases: ["aminoacetic acid", "Gly"]
+  category: Supplement
+  min_dose_mg: 1000
+  max_dose_mg: 15000
+  typical_dose_mg: 3000
+  half_life_hours: 0.5
+  contraindications: []
+  interactions: ["clozapine (may reduce efficacy)"]
+  notes: "Simplest amino acid; inhibitory neurotransmitter in spinal cord/brainstem; may improve sleep quality at 3g before bed; collagen precursor"
+  sources: ["NIH ODS", "Examine.com", "PubChem CID 750"]
