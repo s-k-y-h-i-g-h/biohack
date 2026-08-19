@@ -139,7 +139,7 @@
 - [x] Task 50d: OpenFoodFacts integration — search client & barcode lookup for UK branded foods
 - [x] Task 50e: Multi-source food lookup — OpenFoodFacts primary (UK), USDA fallback (generic)
 - [x] Task 50f: Nutrient completeness tracking — shows macros vs micros coverage per source
-- [ ] Task 51a: Nutrient RDI/DRI reference data (embedded in code or loaded from file)
+- [x] Task 51a: Nutrient RDI/DRI reference data (embedded in src/nutrient_ref.rs — 50+ nutrients with RDI, UL, USDA IDs)
 - [ ] Task 51b: Daily nutrient status calculation (intake vs RDI with %)
 - [ ] Task 51c: `biohack nutrient status --days N` CLI command with deficiency/excess highlighting
 - [ ] Task 51d: Nutrient deficiency/excess summary in `biohack report`
