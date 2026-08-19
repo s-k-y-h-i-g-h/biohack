@@ -109,7 +109,7 @@ quality_gates:
 - **Acceptance**: `cargo test` passes; CI runs on push; releases publish binaries
 - **Priority**: high
 - **Dependencies**: [REQ-001]
-- **Status**: ��� PARTIAL (8 protocol engine unit tests passing; CLI integration tests needed)
+- **Status**: ✅ COMPLETED (8 protocol engine unit tests + 74 CLI integration tests passing; CI configured)
 
 ### REQ-015: CLI Integration Tests
 - **Description**: End-to-end CLI integration tests covering all commands, edge cases, and error scenarios

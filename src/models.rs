@@ -102,7 +102,7 @@ pub struct VitalsLog {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Schedule {
     #[serde(rename = "morning")]
     Morning,

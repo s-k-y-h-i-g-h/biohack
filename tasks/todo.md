@@ -109,8 +109,11 @@
 - [x] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
 - [x] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
 - [x] Task 45: Add tests to CI pipeline
+- [x] Task 46: Integration tests for `biohack stack create/list/show/log`
+- [x] Task 47: Integration tests for `biohack report` (markdown/csv, file/stdout)
+- [x] Task 48: Integration tests for `biohack protocol test` (valid/invalid IDs)
 
-**Checkpoint: CLI Integration Tests** ����������������� ���������������
+**Checkpoint: CLI Integration Tests** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 12: Protocol Engine & Testing (v1.0)
 - [ ] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
