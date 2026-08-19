@@ -104,14 +104,14 @@ Build a Rust CLI application (`biohack`) for tracking substances, vitals, and fo
 **Checkpoint: Documentation Complete** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 10: User Documentation (v1.0)
-- [ ] Task 33: Create docs/user-guide.md (installation, quick start, workflow)
-- [ ] Task 34: Create docs/command-reference.md (all commands with examples)
-- [ ] Task 35: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
-- [ ] Task 36: Create docs/configuration.md (database path, config file, env vars)
-- [ ] Task 37: Create docs/troubleshooting.md (common issues, FAQ)
-- [ ] Task 38: Link all docs from README.md
+- [x] Task 33: Create docs/user-guide.md (installation, quick start, workflow)
+- [x] Task 34: Create docs/command-reference.md (all commands with examples)
+- [x] Task 35: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
+- [x] Task 36: Create docs/configuration.md (database path, config file, env vars)
+- [x] Task 37: Create docs/troubleshooting.md (common issues, FAQ)
+- [x] Task 38: Link all docs from README.md
 
-**Checkpoint: User Documentation** ������������������� ����������������� ����������������� ���������������
+**Checkpoint: User Documentation** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
 
 ## Phase 11: CLI Integration Tests (v1.0)
 - [x] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)

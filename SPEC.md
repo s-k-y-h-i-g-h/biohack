@@ -116,21 +116,21 @@ quality_gates:
 - **Acceptance**: `cargo test` includes integration tests for all CLI commands; edge cases tested (invalid doses, missing args, etc.)
 - **Priority**: high
 - **Dependencies**: [REQ-014]
-- **Status**: ��� NOT STARTED
+- **Status**: ✅ COMPLETED
 
 ### REQ-016: Documentation & GitHub
 - **Description**: README.md with installation, usage examples, command reference; push to GitHub with proper repo setup
 - **Acceptance**: README.md exists with usage examples; repo at https://github.com/s-k-y-h-i-g-h/biohack has commits and CI
 - **Priority**: high
 - **Dependencies**: [REQ-001]
-- **Status**: �� COMPLETED
+- **Status**: ✅ COMPLETED
 
 ### REQ-017: User Documentation
 - **Description**: Comprehensive user documentation including installation guide, command reference with examples, configuration guide, protocol authoring guide, and troubleshooting
 - **Acceptance**: docs/ directory with user-guide.md, command-reference.md, protocol-authoring.md, configuration.md, troubleshooting.md; all linked from README.md
 - **Priority**: high
 - **Dependencies**: [REQ-001, REQ-016]
-- **Status**: �� COMPLETED
+- **Status**: ✅ COMPLETED
 
 ### REQ-018: Food Database (v1.1)
 - **Description**: Integrate USDA FoodData Central for nutrient lookup; track macro/micronutrients

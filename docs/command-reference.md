@@ -49,7 +49,7 @@ biohack log substance --name NAME --dose DOSE [--route ROUTE] [--time TIME] [--n
 | Option | Short | Required | Description |
 |--------|-------|----------|-------------|
 | `--name` | `-n` | Yes | Substance name (fuzzy-matched against database) |
-| `--dose` | `-d` | Yes | Dose (e.g., "400mg", "2.5g", "10ml") |
+| `--dose` | `-d` | Yes | Dose (e.g., "400mg", "2.5g", "10ml", "5000IU") |
 | `--route` | `-r` | No | Route of administration (default: "oral") |
 | `--time` | `-t` | No | Timestamp ISO 8601 (default: now) |
 | `--notes` | | No | Additional notes |
@@ -64,6 +64,9 @@ biohack log substance --name "Caffeine" --dose 100mg --route sublingual --time "
 
 # With notes
 biohack log substance --name "Magnesium Glycinate" --dose 400mg --notes "Before bed"
+
+# International Units
+biohack log substance --name "Vitamin D3" --dose 5000IU
 ```
 
 **Output:**
@@ -141,10 +144,30 @@ biohack log food --name "Salmon" --amount 150 --unit g --notes "Wild caught"
 
 #### `biohack log stack`
 
-Log a predefined stack (stub - not yet implemented).
+Log a predefined stack.
 
 ```bash
 biohack log stack --name NAME [--time TIME]
+```
+
+**Options:**
+| Option | Short | Required | Description |
+|--------|-------|----------|-------------|
+| `--name` | | Yes | Stack name |
+| `--time` | `-t` | No | Timestamp ISO 8601 (default: now) |
+
+**Examples:**
+```bash
+biohack log stack --name "Morning Stack"
+biohack log stack --name "Evening Stack" --time "2024-01-15T20:00:00Z"
+```
+
+**Output:**
+```
+[OK] Logged stack 'Morning Stack': 3 items at 2024-01-15 08:00
+  [OK] L-Theanine 200mg oral
+  [OK] Vitamin D3 5000IU oral
+  [OK] Omega-3 Fish Oil 2g oral
 ```
 
 ---
@@ -333,7 +356,7 @@ Actions (priority order):
 
 ### `biohack stack`
 
-Manage stacks (stub - not yet implemented).
+Manage stacks.
 
 ```bash
 biohack stack list
@@ -341,26 +364,141 @@ biohack stack show NAME
 biohack stack create PATH
 ```
 
+**Examples:**
+```bash
+# List all stacks
+biohack stack list
+
+# Show stack details
+biohack stack show "Morning Stack"
+
+# Create stack from YAML file
+biohack stack create morning-stack.yaml
+```
+
+**YAML Format:**
+```yaml
+name: "Morning Stack"
+description: "Daily morning supplement stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "morning"
+  - substance_name: "Vitamin D3"
+    dose: "5000IU"
+    route: "oral"
+    schedule: "morning"
+```
+
+**Schedules:** `morning`, `evening`, `prn` (as needed)
+
 ---
 
 ### `biohack protocol`
 
-Protocol commands (stub - not yet implemented).
+Protocol commands.
 
 ```bash
 biohack protocol list
-biohack protocol test --id ID
+biohack protocol test ID
 biohack protocol show ID
+```
+
+**Examples:**
+```bash
+# List all available protocols
+biohack protocol list
+
+# Test a specific protocol with current data
+biohack protocol test stimulant_tachycardia
+
+# Test with verbose output
+biohack -v protocol test hypertension_urgency
+```
+
+**Output (protocol list):**
+```
+[PROTOCOL] Stimulant-Associated Tachycardia (stimulant_tachycardia)
+  Triggered when heart rate > 100 bpm with stimulant use in last 4 hours
+  Version: 1.0
+  Actions: 6
+
+[PROTOCOL] Hypertensive Urgency (hypertension_urgency)
+  Triggered when SBP >= 180 or DBP >= 120 without acute end-organ symptoms
+  Version: 1.0
+  Actions: 6
+
+[PROTOCOL] Serotonin Syndrome Risk (serotonin_syndrome_risk)
+  Triggered when multiple serotonergic agents logged within 24h
+  Version: 1.0
+  Actions: 4
+```
+
+**Output (protocol test):**
+```
+[TEST] Testing protocol: Stimulant-Associated Tachycardia (stimulant_tachycardia)
+Description: Triggered when heart rate > 100 bpm with stimulant use in last 4 hours
+
+Triggered: NO
+
+Matched conditions:
+  - substance.recent.category contains "stimulant"
 ```
 
 ---
 
 ### `biohack report`
 
-Generate reports (stub - not yet implemented).
+Generate reports.
 
 ```bash
 biohack report [--days DAYS] [--format FORMAT] [--output PATH]
+```
+
+**Options:**
+| Option | Short | Required | Default | Description |
+|--------|-------|----------|---------|-------------|
+| `--days` | `-d` | No | 7 | Days to include |
+| `--format` | `-f` | No | markdown | Output format: markdown, csv |
+| `--output` | `-o` | No | stdout | Output file path |
+
+**Examples:**
+```bash
+# Markdown report (default)
+biohack report --days 7
+
+# CSV report to file
+biohack report --days 30 --format csv --output monthly-report.csv
+
+# Markdown to file
+biohack report --days 14 --format markdown --output two-week-report.md
+```
+
+**Output (markdown):**
+```markdown
+# Biohack Health Report
+
+**Generated:** 2024-01-15 10:30 UTC
+**Period:** 2024-01-08 to 2024-01-15 (7 days)
+
+## Summary
+- **Substance Logs:** 42
+- **Unique Substances:** 8
+- **Vitals Logs:** 14
+- **Food Logs:** 21
+- **Defined Stacks:** 2
+
+## Substance Intake Log
+| Date & Time | Substance | Dose | Route | Category | Notes |
+|-------------|-----------|------|-------|----------|-------|
+| 2024-01-15 08:00 | L-Theanine | 200mg | oral | nootropic | — |
+
+## Substance Frequency
+| Substance | Log Count |
+|-----------|-----------|
+| L-Theanine | 14 |
+| Caffeine | 10 |
 ```
 
 ---

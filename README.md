@@ -85,15 +85,22 @@ biohack show timeline --days 3
 | `biohack log substance --name NAME --dose DOSE [--route ROUTE] [--time TIME] [--notes NOTES]` | Log substance intake |
 | `biohack log vitals [--hr HR] [--sbp SBP] [--dbp DBP] [--temp TEMP] [--spo2 SPO2] [--hrv HRV] [--weight WEIGHT] [--time TIME] [--notes NOTES]` | Log vitals |
 | `biohack log food --name NAME --amount AMOUNT [--unit UNIT] [--time TIME] [--notes NOTES]` | Log food item (MVP) |
-| `biohack log stack --name NAME [--time TIME]` | Log predefined stack (stub) |
+| `biohack log stack --name NAME [--time TIME]` | Log predefined stack |
 | `biohack substance list [--category CATEGORY]` | List substances in database |
 | `biohack substance search QUERY` | Search substances |
-| `biohack substance show NAME` | Show substance details (stub) |
+| `biohack substance show NAME` | Show substance details |
 | `biohack substance seed [--path PATH]` | Seed database from YAML |
+| `biohack stack list` | List defined stacks |
+| `biohack stack show NAME` | Show stack details |
+| `biohack stack create PATH` | Create stack from YAML |
+| `biohack protocol list` | List available protocols |
+| `biohack protocol test ID` | Test protocol with current data |
+| `biohack protocol show ID` | Show protocol details |
 | `biohack check` | Run safety protocols against recent logs |
 | `biohack show substances [--days N] [--name NAME]` | Show recent substance logs |
 | `biohack show vitals [--days N]` | Show recent vitals logs |
 | `biohack show timeline [--days N]` | Show combined timeline |
+| `biohack report [--days N] [--format FORMAT] [--output PATH]` | Generate report (markdown/csv) |
 
 ## Safety Protocols
 

@@ -113,9 +113,9 @@ Individual food items:
 - **Time** — ISO 8601 (defaults to now)
 - **Notes** — free text
 
-### Stacks (Planned)
+### Stacks
 
-Predefined groups of substances (morning, evening, PRN). Not yet implemented.
+Predefined groups of substances (morning, evening, PRN). Define in YAML and log with `biohack log stack <name>`.
 
 ### Safety Protocols
 
@@ -156,8 +156,7 @@ biohack log vitals --hr 95 --sbp 135 --dbp 85
 
 ```bash
 # Log evening stack
-biohack log substance --name "Magnesium Glycinate" --dose 400mg
-biohack log substance --name "L-Theanine" --dose 200mg
+biohack log stack --name "Evening Stack"
 
 # Evening vitals
 biohack log vitals --hr 70 --sbp 118 --dbp 76 --temp 36.9
@@ -177,6 +176,9 @@ biohack show vitals --days 7
 
 # View combined timeline
 biohack show timeline --days 7
+
+# Generate markdown report for clinician
+biohack report --days 7 --format markdown --output weekly-report.md
 ```
 
 ---
@@ -324,6 +326,9 @@ biohack log substance --name "Test" --dose 2.5g
 
 # Milliliters
 biohack log substance --name "Test" --dose 10ml
+
+# International Units (vitamins, hormones)
+biohack log substance --name "Vitamin D3" --dose 5000IU
 
 # Bare number (assumes mg)
 biohack log substance --name "Test" --dose 400
