@@ -192,6 +192,10 @@ pub struct StackArgs {
     /// Timestamp (ISO 8601, default: now)
     #[arg(short = 't', long)]
     pub time: Option<String>,
+
+    /// Only log items that are due based on their schedule
+    #[arg(long)]
+    pub due: bool,
 }
 
 #[derive(Args, Debug)]

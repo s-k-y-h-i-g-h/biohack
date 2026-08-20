@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Duration, Local, Utc};
+use chrono::{DateTime, Duration, Local, Utc, Timelike};
 use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use crate::nutrient_ref::{NutrientStatusLevel, status_label};
 use owo_colors::OwoColorize;
@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::cli::*;
 use crate::db::Database;
-use crate::models::{FoodLog, Stack, Substance, SubstanceLog, VitalsLog};
+use crate::models::{FoodLog, Stack, StackItem, Substance, SubstanceLog, VitalsLog, Schedule};
 use crate::protocols::{ProtocolContext, ProtocolEngine};
 
 /// Initialize the database
@@ -866,6 +866,37 @@ pub fn handle_stack_show(db: &Database, args: &StackCommands, _no_color: bool) -
     Ok(())
 }
 
+/// Returns true if the stack item is due to be logged based on its schedule.
+/// For time-of-day schedules (morning/evening), checks current local time.
+/// For interval schedules, checks if enough hours have passed since the most recent log of that substance.
+/// For prn, always returns false (user decides when to log).
+fn is_due(item: &StackItem, db: &Database) -> bool {
+    match &item.schedule {
+        Some(Schedule::Morning) => {
+            let now = Local::now();
+            let hour = now.hour();
+            hour >= 6 && hour < 12
+        }
+        Some(Schedule::Evening) => {
+            let now = Local::now();
+            let hour = now.hour();
+            hour >= 18 && hour < 22
+        }
+        Some(Schedule::Prn) => false,
+        Some(Schedule::Interval(hours)) => {
+            match db.get_most_recent_substance_log(&item.substance_name) {
+                Ok(Some(log)) => {
+                    let elapsed = Utc::now() - log.timestamp;
+                    elapsed.num_hours() >= *hours as i64
+                }
+                Ok(None) => true,
+                Err(_) => false,
+            }
+        }
+        None => false,
+    }
+}
+
 /// Log a stack (log all substances in the stack at once)
 pub fn handle_log_stack(db: &Database, args: &LogCommands, _no_color: bool) -> Result<()> {
     if let LogCommands::Stack(args) = args {
@@ -883,6 +914,10 @@ pub fn handle_log_stack(db: &Database, args: &LogCommands, _no_color: bool) -> R
 
         let mut logged = 0;
         for item in &stack.items {
+            // If --due flag is set, check if item is due
+            if args.due && !is_due(item, db) {
+                continue;
+            }
             let substance = db
                 .get_substance_by_name(&item.substance_name)?
                 .ok_or_else(|| {

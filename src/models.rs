@@ -127,6 +127,7 @@ pub enum Schedule {
     Evening,
     #[serde(rename = "prn")]
     Prn,
+    Interval(u64),
 }
 
 impl std::fmt::Display for Schedule {
@@ -135,6 +136,7 @@ impl std::fmt::Display for Schedule {
             Self::Morning => write!(f, "morning"),
             Self::Evening => write!(f, "evening"),
             Self::Prn => write!(f, "prn"),
+            Self::Interval(hours) => write!(f, "every {hours}h"),
         }
     }
 }
@@ -143,15 +145,25 @@ impl std::str::FromStr for Schedule {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_lowercase().as_str() {
-            "morning" => Self::Morning,
-            "evening" => Self::Evening,
-            "prn" => Self::Prn,
-            other => anyhow::bail!(
-                "Invalid schedule: {}. Use 'morning', 'evening', or 'prn'",
-                other
-            ),
-        })
+        let s_lower = s.to_lowercase();
+        if s_lower == "morning" {
+            Ok(Self::Morning)
+        } else if s_lower == "evening" {
+            Ok(Self::Evening)
+        } else if s_lower == "prn" {
+            Ok(Self::Prn)
+        } else if s_lower.starts_with("every ") && s_lower.ends_with('h') {
+            let num_str = &s_lower[6..s_lower.len() - 1];
+            let hours: u64 = num_str
+                .parse()
+                .map_err(|_| anyhow::anyhow!("Invalid interval: {s}"))?;
+            Ok(Self::Interval(hours))
+        } else {
+            Err(anyhow::anyhow!(
+                "Invalid schedule: {}. Use 'morning', 'evening', 'prn', or 'every Xh'",
+                s
+            ))
+        }
     }
 }
 

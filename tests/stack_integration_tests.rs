@@ -4,6 +4,7 @@ use biohack::commands::{
 };
 use biohack::db::Database;
 use biohack::models::Schedule;
+use chrono::Utc;
 use std::fs;
 use tempfile::tempdir;
 use uuid::Uuid;
@@ -220,6 +221,7 @@ items:
         let args = StackArgs {
             name: "Test Stack".to_string(),
             time: None,
+            due: false,
         };
         let cmd = LogCommands::Stack(args);
         let result = handle_log_stack(&db, &cmd, false);
@@ -254,6 +256,7 @@ items:
         let args = StackArgs {
             name: "NonExistentStack".to_string(),
             time: None,
+            due: false,
         };
         let cmd = LogCommands::Stack(args);
         let result = handle_log_stack(&db, &cmd, false);
@@ -286,6 +289,7 @@ items: []
         let args = StackArgs {
             name: "Empty Stack".to_string(),
             time: None,
+            due: false,
         };
         let cmd = LogCommands::Stack(args);
         let result = handle_log_stack(&db, &cmd, false);
@@ -311,6 +315,7 @@ items: []
         let args = StackArgs {
             name: "Test Stack".to_string(),
             time: Some(custom_time.to_string()),
+            due: false,
         };
         let cmd = LogCommands::Stack(args);
         let result = handle_log_stack(&db, &cmd, false);
@@ -325,5 +330,201 @@ items: []
                 .with_timezone(&chrono::Utc);
             assert_eq!(log.timestamp, expected);
         }
+    }
+
+    #[test]
+    fn test_stack_with_interval_schedule() {
+        let (db, temp_dir) = setup_db_with_substances();
+        let yaml_path = temp_dir.path().join("interval_stack.yaml");
+        let content = r#"
+name: "Interval Stack"
+description: "Stack with interval schedule"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "every 4h"
+  - substance_name: "Vitamin D3"
+    dose: "5000IU"
+    route: "oral"
+    schedule: "every 24h"
+"#;
+        fs::write(&yaml_path, content).unwrap();
+
+        let args = StackCreateArgs { path: yaml_path };
+        let cmd = StackCommands::Create(args);
+        handle_stack_create(&db, &cmd, false).unwrap();
+
+        // Verify stack was created with interval schedules
+        let stack = db.get_stack("Interval Stack").unwrap().unwrap();
+        assert_eq!(stack.items.len(), 2);
+        assert_eq!(stack.items[0].substance_name, "L-Theanine");
+        assert_eq!(stack.items[0].schedule, Some(Schedule::Interval(4)));
+        assert_eq!(stack.items[1].substance_name, "Vitamin D3");
+        assert_eq!(stack.items[1].schedule, Some(Schedule::Interval(24)));
+    }
+
+    #[test]
+    fn test_log_stack_due_flag_interval_no_prior_log() {
+        let (db, temp_dir) = setup_db_with_substances();
+        let yaml_path = temp_dir.path().join("interval_stack.yaml");
+        let content = r#"
+name: "Interval Stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "every 4h"
+"#;
+        fs::write(&yaml_path, content).unwrap();
+
+        let args = StackCreateArgs { path: yaml_path };
+        let cmd = StackCommands::Create(args);
+        handle_stack_create(&db, &cmd, false).unwrap();
+
+        // Log stack with --due flag (no prior logs, so should log)
+        let args = StackArgs {
+            name: "Interval Stack".to_string(),
+            time: None,
+            due: true,
+        };
+        let cmd = LogCommands::Stack(args);
+        let result = handle_log_stack(&db, &cmd, false);
+
+        assert!(result.is_ok());
+
+        // Should have logged the item
+        let logs = db.get_recent_substance_logs(1, None).unwrap();
+        assert_eq!(logs.len(), 1);
+        assert_eq!(logs[0].substance_name, "L-Theanine");
+    }
+
+    #[test]
+    fn test_log_stack_due_flag_interval_within_window() {
+        let (db, temp_dir) = setup_db_with_substances();
+        let yaml_path = temp_dir.path().join("interval_stack.yaml");
+        let content = r#"
+name: "Interval Stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "every 4h"
+"#;
+        fs::write(&yaml_path, content).unwrap();
+
+        let args = StackCreateArgs { path: yaml_path };
+        let cmd = StackCommands::Create(args);
+        handle_stack_create(&db, &cmd, false).unwrap();
+
+        // First, log the substance manually (simulating a recent log)
+        let log = biohack::models::SubstanceLog {
+            id: Uuid::new_v4(),
+            substance_id: db.get_substance_by_name("L-Theanine").unwrap().unwrap().id,
+            substance_name: "L-Theanine".to_string(),
+            dose_mg: 200.0,
+            route: "oral".to_string(),
+            timestamp: Utc::now() - chrono::Duration::hours(2), // 2 hours ago
+            notes: Some("Manual log".to_string()),
+            category: Some("nootropic".to_string()),
+        };
+        db.insert_substance_log(&log).unwrap();
+
+        // Now try to log stack with --due (should skip because only 2 hours passed)
+        let args = StackArgs {
+            name: "Interval Stack".to_string(),
+            time: None,
+            due: true,
+        };
+        let cmd = LogCommands::Stack(args);
+        let result = handle_log_stack(&db, &cmd, false);
+
+        assert!(result.is_ok());
+
+        // Should NOT have logged (still within 4h window)
+        let logs = db.get_recent_substance_logs(1, None).unwrap();
+        assert_eq!(logs.len(), 1); // Only the manual log
+        assert_eq!(logs[0].notes.as_ref().unwrap(), "Manual log");
+    }
+
+    #[test]
+    fn test_log_stack_due_flag_interval_past_window() {
+        let (db, temp_dir) = setup_db_with_substances();
+        let yaml_path = temp_dir.path().join("interval_stack.yaml");
+        let content = r#"
+name: "Interval Stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "every 4h"
+"#;
+        fs::write(&yaml_path, content).unwrap();
+
+        let args = StackCreateArgs { path: yaml_path };
+        let cmd = StackCommands::Create(args);
+        handle_stack_create(&db, &cmd, false).unwrap();
+
+        // First, log the substance manually (5 hours ago - past the 4h interval)
+        let log = biohack::models::SubstanceLog {
+            id: Uuid::new_v4(),
+            substance_id: db.get_substance_by_name("L-Theanine").unwrap().unwrap().id,
+            substance_name: "L-Theanine".to_string(),
+            dose_mg: 200.0,
+            route: "oral".to_string(),
+            timestamp: Utc::now() - chrono::Duration::hours(5), // 5 hours ago
+            notes: Some("Manual log".to_string()),
+            category: Some("nootropic".to_string()),
+        };
+        db.insert_substance_log(&log).unwrap();
+
+        // Now try to log stack with --due (should log because 5h > 4h)
+        let args = StackArgs {
+            name: "Interval Stack".to_string(),
+            time: None,
+            due: true,
+        };
+        let cmd = LogCommands::Stack(args);
+        let result = handle_log_stack(&db, &cmd, false);
+
+        assert!(result.is_ok());
+
+        // Should have logged a new entry
+        let logs = db.get_recent_substance_logs(1, None).unwrap();
+        assert_eq!(logs.len(), 2); // Manual log + new log from stack
+    }
+
+    #[test]
+    fn test_log_stack_due_flag_prn_never_due() {
+        let (db, temp_dir) = setup_db_with_substances();
+        let yaml_path = temp_dir.path().join("prn_stack.yaml");
+        let content = r#"
+name: "PRN Stack"
+items:
+  - substance_name: "L-Theanine"
+    dose: "200mg"
+    route: "oral"
+    schedule: "prn"
+"#;
+        fs::write(&yaml_path, content).unwrap();
+
+        let args = StackCreateArgs { path: yaml_path };
+        let cmd = StackCommands::Create(args);
+        handle_stack_create(&db, &cmd, false).unwrap();
+
+        // Log stack with --due flag (PRN should never be due automatically)
+        let args = StackArgs {
+            name: "PRN Stack".to_string(),
+            time: None,
+            due: true,
+        };
+        let cmd = LogCommands::Stack(args);
+        let result = handle_log_stack(&db, &cmd, false);
+
+        assert!(result.is_ok());
+
+        // Should NOT have logged (PRN is never auto-due)
+        let logs = db.get_recent_substance_logs(1, None).unwrap();
+        assert_eq!(logs.len(), 0);
     }
 }

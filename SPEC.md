@@ -166,3 +166,15 @@ quality_gates:
 - **Priority**: high
 - **Dependencies**: [REQ-010]
 - **Status**: ✅ COMPLETED — OpenFoodFacts search + barcode lookup implemented; multi-source fallback (OFF → USDA) working; nutrient completeness tracking added
+
+### REQ-023: Interval-Based Stack Scheduling
+- **Description**: Extend stack scheduling to support interval-based repetition (e.g., "every 4 hours") in addition to time-of-day schedules. Stack names should reflect the problem they solve (e.g., "Longevity Stack") rather than when they are consumed. A new `--due` flag on `biohack log stack` logs only items whose interval has elapsed since the last logged occurrence.
+- **Acceptance**: 
+  - `Schedule` enum parses strings like "every 4h" into `Interval(4)` and displays as "every 4h".
+  - `biohack stack show` displays interval schedules clearly.
+  - `biohack log stack --due <stack_name>` logs only items that are due (based on the most recent substance log for that substance).
+  - `biohack log stack <stack_name>` (without --due) logs all items (backward compatible).
+  - All existing tests pass; new unit and integration tests cover the new functionality.
+- **Priority**: medium
+- **Dependencies**: [REQ-001, REQ-002, REQ-003]
+- **Status**: 📋 PLANNED

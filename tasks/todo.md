@@ -1,151 +1,31 @@
-# Task List: Biohacker's Safety-First Tracking CLI
+# Task List: Interval-Based Stack Scheduling
 
-## Phase 1: Foundation (COMPLETED)
-- [x] Task 1: Set up project structure with Cargo.toml, src/, and basic main.rs
-- [x] Task 2: Define core data models (Substance, SubstanceLog, VitalsLog, FoodLog)
-- [x] Task 3: Implement sled database layer with basic CRUD operations for substances
-- [x] Task 4: Create substance seeder to load data/seeds/substances.yaml on first run
-- [x] Task 5: Implement basic CLI command parsing for substance/log and substance/seed commands
+## Phase 1: Schedule Model & Parsing
+- [ ] Task 1: Extend `Schedule` enum with `Interval(u64)` variant
+- [ ] Task 2: Implement `FromStr` and `Display` for `Schedule` to parse strings like `"every 4h"`
+- [ ] Task 3: Add unit tests for `Schedule` parsing and formatting
 
-**Checkpoint: Foundation** ����������� ���������
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack seed` loads substances successfully, `biohack substance list` shows them
+## Phase 2: StackItem & YAML Integration
+- [ ] Task 4: Ensure `StackItem.schedule` remains `Option<Schedule>` (no change needed)
+- [ ] Task 5: Verify YAML (de)serialization works for the new variant via serde (no extra code needed if using string representation)
+- [ ] Task 6: Add unit tests for round‑trip YAML of a stack with interval schedule
 
-## Phase 2: Core Logging (COMPLETED)
-- [x] Task 6: Implement substance logging command (`biohack log substance`)
-- [x] Task 7: Implement vitals logging command (`biohack log vitals`)
-- [x] Task 8: Implement food logging command (`biohack log food`) - MVP stub
-- [x] Task 9: Create console output formatting for logged entries (timestamp, substance/vitals/food details)
-- [x] Task 10: Implement `biohack log list --days 3` to show recent entries across types
+## Phase 3: Due‑Check Logic
+- [ ] Task 7: Implement `is_due(item: &StackItem, db: &Database) -> bool` that queries the most recent substance log
+- [ ] Task 8: Add unit tests for `is_due` using a mock/subset of the database
+- [ ] Task 9: Add integration tests that verify due behavior with real DB
 
-**Checkpoint: Core Logging** ����������� ���������
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: Can log substance, vitals, and food; commands work
+## Phase 4: CLI Command Update
+- [ ] Task 10: Add `--due` flag to the `log stack` subcommand (via clap)
+- [ ] Task 11: Modify `handle_log_stack` to optionally filter by `is_due` when the flag is present
+- [ ] Task 12: Update `handle_stack_list` and `handle_stack_show` to display interval schedules clearly
+- [ ] Task 13: Add CLI integration tests for the `--due` flag (logging due vs. all items)
 
-## Phase 3: Safety Protocols (COMPLETED)
-- [x] Task 11: Implement protocol engine data structures (Protocol, ProtocolCondition, ProtocolAction)
-- [x] Task 12: Encode three built-in protocols: stimulant tachycardia, hypertension urgency, serotonin syndrome risk
-- [x] Task 13: Implement protocol evaluation engine (check conditions against recent logs)
-- [x] Task 14: Create `biohack check` command to run protocols and display alerts/suggestions
-- [x] Task 15: Add protocol testing capability (`biohack protocol test --id stimulant_tachycardia`)
+## Phase 5: Documentation & Polish
+- [ ] Task 14: Update README.md command reference to explain interval schedule syntax and `--due` flag
+- [ ] Task 15: Update `docs/command-reference.md` with details for `log stack --due`
+- [ ] Task 16: Ensure no clippy warnings or formatting issues (`cargo clippy`, `cargo fmt`)
 
-**Checkpoint: Core Features** ������������� �����������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack check` triggers protocols appropriately with test data
-
-## Phase 4: View Recent Logs — Substances (v1.0)
-- [x] Task 11: Implement database query for recent substance logs with filtering
-- [x] Task 12: Implement `biohack show substances --days N --name NAME` command with formatted table output
-- [x] Task 13: Add unit tests for substance log queries
-- [x] Task 14: Add "Time Ago" column to show elapsed time since each log entry
-
-**Checkpoint: View Substances** ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show substances --days 7` shows formatted table
-
-## Phase 5: View Recent Logs — Vitals (v1.0)
-- [x] Task 14: Implement database query for recent vitals logs
-- [x] Task 15: Implement `biohack show vitals --days N` command with formatted table output
-- [x] Task 16: Add unit tests for vitals log queries
-
-**Checkpoint: View Vitals** ������������� ����������� ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show vitals --days 7` shows formatted table
-
-## Phase 6: View Recent Logs — Timeline (v1.0)
-- [x] Task 17: Implement combined timeline query merging substances, vitals, food logs
-- [x] Task 18: Implement `biohack show timeline --days N` command with formatted table output
-- [x] Task 19: Add unit tests for timeline queries
-
-**Checkpoint: View Timeline** ��������������� ������������� ������������� ����������� ������������� ����������� ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show timeline --days 7` shows combined chronological table
-
-## Phase 6b: Remove Log Entries (v1.0)
-- [x] Task 19b: Add ID column to `biohack show substances`, `biohack show vitals`, `biohack show timeline`
-- [x] Task 19c: Add database delete methods for substance logs, vitals logs, food logs
-- [x] Task 19d: Implement `biohack remove substance <id>`, `biohack remove vitals <id>`, `biohack remove food <id>` commands
-- [x] Task 19e: Add integration tests for remove commands
-
-**Checkpoint: Remove Log Entries** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 7: Stack Management (v1.0)
-- [x] Task 20: Implement stack YAML schema and data model
-- [x] Task 21: Create `biohack stack create/list/show` commands
-- [x] Task 22: Implement `biohack log stack <name>` to log multiple substances at once
-- [x] Task 23: Add stack scheduling (morning/evening/prn)
-
-**Checkpoint: Stack Management** ��
-
-## Phase 8: Reporting & Export (v1.0)
-- [x] Task 24: Implement markdown report generation
-- [x] Task 25: Implement CSV export
-- [x] Task 26: Add `biohack report --days N --format markdown|csv` command
-- [x] Task 27: Clinician-ready formatting (structured sections)
-
-**Checkpoint: Reporting** ����������� ���������
-
-## Phase 9: Polish & Documentation (v1.0)
-- [x] Task 28: Create README.md with installation, usage examples, command reference
-- [x] Task 29: Add help text and examples for all commands
-- [x] Task 30: Proper error handling and user-friendly error messages
-- [x] Task 31: Push to GitHub (https://github.com/s-k-y-h-i-g-h/biohack)
-- [x] Task 32: Set up GitHub Actions CI
-
-**Checkpoint: Documentation Complete** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 10: User Documentation (v1.0)
-- [x] Task 33: Create docs/user-guide.md (installation, quick start, workflow)
-- [x] Task 34: Create docs/command-reference.md (all commands with examples)
-- [x] Task 35: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
-- [x] Task 36: Create docs/configuration.md (database path, config file, env vars)
-- [x] Task 37: Create docs/troubleshooting.md (common issues, FAQ)
-- [x] Task 38: Link all docs from README.md
-
-**Checkpoint: User Documentation** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 11: CLI Integration Tests (v1.0)
-- [x] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
-- [x] Task 40: Integration tests for `biohack log vitals` (all vitals combos, validation)
-- [x] Task 41: Integration tests for `biohack log food` (units, amounts, edge cases)
-- [x] Task 42: Integration tests for `biohack substance seed/list/show/search`
-- [x] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
-- [x] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
-- [x] Task 45: Add tests to CI pipeline
-- [x] Task 46: Integration tests for `biohack stack create/list/show/log`
-- [x] Task 47: Integration tests for `biohack report` (markdown/csv, file/stdout)
-- [x] Task 48: Integration tests for `biohack protocol test` (valid/invalid IDs)
-
-**Checkpoint: CLI Integration Tests** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 12: Protocol Engine & Testing (v1.0)
-- [x] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
-- [x] Task 47: Write integration tests for CLI commands
-- [x] Task 48: Set up GitHub Actions CI
-- [x] Task 49: Property-based tests for protocol evaluation
-
-**Checkpoint: Tests & CI** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 13: v1.1 Features (Planned)
-- [x] Task 50a: Food database integration (USDA FoodData Central) — search client & `biohack show food-search` implemented
-- [x] Task 50b: Nutrient display on `biohack log food` (scale USDA data to user amount/unit)
-- [x] Task 50c: Daily nutrient totals & reporting integration
-- [x] Task 50d: OpenFoodFacts integration — search client & barcode lookup for UK branded foods
-- [x] Task 50e: Multi-source food lookup — OpenFoodFacts primary (UK), USDA fallback (generic)
-- [x] Task 50f: Nutrient completeness tracking — shows macros vs micros coverage per source
-- [x] Task 51a: Nutrient RDI/DRI reference data (embedded in src/nutrient_ref.rs — 50+ nutrients with RDI, UL, USDA IDs)
-- [x] Task 51b: Daily nutrient status calculation (intake vs RDI with %) — implemented in db.rs::get_daily_nutrient_status()
-- [x] Task 51c: `biohack nutrient status --days N` CLI command with deficiency/excess highlighting — implemented in commands.rs
-- [x] Task 51d: Nutrient deficiency/excess summary in `biohack report` — markdown section added to generate_markdown_report()
-- [x] Task 52: Protocol YAML versioning and migration system — implemented with database storage, migration logic, CLI commands
-
-## Phase 14: Substance Database Expansion (v1.1)
-- [x] Task 56: Add Memantine, Taurine, Glycine to substance seed database (N-Acetyl-Cysteine and Creatine already present)
-
-**Checkpoint: v1.1 Complete** ����������������� ���������������
+## Phase 6: Veration
+- [ ] Task 17: Run full test suite (`cargo test --all-targets`) to confirm no regressions
+- [ ] Task 18: Manual spot‑check: create a stack with interval, verify `log stack --due` logs items only when appropriate

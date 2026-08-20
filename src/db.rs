@@ -194,6 +194,19 @@ impl Database {
         Ok(results)
     }
 
+    /// Get the most recent substance log for a given substance name (any time).
+    pub fn get_most_recent_substance_log(&self, name: &str) -> Result<Option<SubstanceLog>> {
+        // Iterate from newest to oldest (by reversing the iterator)
+        for item in self.substance_logs.iter().rev() {
+            let (_, value) = item?;
+            let log: SubstanceLog = self.deserialize(&value)?;
+            if log.substance_name.eq_ignore_ascii_case(name) {
+                return Ok(Some(log));
+            }
+        }
+        Ok(None)
+    }
+
     // ===== Vitals Logs =====
 
     pub fn insert_vitals_log(&self, log: &VitalsLog) -> Result<()> {

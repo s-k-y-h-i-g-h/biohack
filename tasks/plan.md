@@ -1,195 +1,77 @@
-# Implementation Plan: Biohacker's Safety-First Tracking CLI
+# Implementation Plan: Interval-Based Stack Scheduling
 
 ## Overview
-Build a Rust CLI application (`biohack`) for tracking substances, vitals, and food intake with deterministic safety protocols. The application uses a pure-Rust embedded database (sled) for local-first data ownership and includes a curated substance seed.
+Add support for interval-based scheduling (e.g., "every 4 hours") to stack items in the biohack CLI. Users can specify a schedule like `schedule: "every 6h"` in their stack YAML. A new `--due` flag on `biohack log stack` will log only those items whose interval has elapsed since the last logged occurrence (or never logged). Stack names should reflect the problem they solve (e.g., "Longevity Stack") rather than time of day.
 
 ## Architecture Decisions
-- Use sled embedded database for zero-configuration, local-first storage
-- Implement substance logging first, then vitals, then food logging as extensions
-- Build protocol engine with three built-in safety rules (tachycardia, hypertension, serotonin syndrome)
-- Use clap 4 for command-line parsing with structured subcommands
-- Focus on MVP with extensible design for v1.1 features (stacks, reporting, food database)
+- Keep the existing `schedule` field in `StackItem`; extend the `Schedule` enum with an `Interval(u64)` variant representing hours.
+- Parse schedule strings like `"every 4h"` into `Schedule::Interval(4)`; display as `"every 4h"`.
+- Do not persist last‑logged timestamps in the stack definition; determine dues by querying the most recent `SubstanceLog` for the substance name (any route).
+- Add a `--due` flag to `biohack log stack` that filters items to only those that are due; default behavior logs all items (backward compatible).
+- No changes to log entries; stack association remains inferred from the note `"Logged via stack: {stack.name}"` (optional enhancement could add a stack_id column later).
 
 ## Task List
 
-### Phase 1: Foundation (COMPLETED)
-- [x] Task 1: Set up project structure with Cargo.toml, src/, and basic main.rs
-- [x] Task 2: Define core data models (Substance, SubstanceLog, VitalsLog, FoodLog)
-- [x] Task 3: Implement sled database layer with basic CRUD operations for substances
-- [x] Task 4: Create substance seeder to load data/seeds/substances.yaml on first run
-- [x] Task 5: Implement basic CLI command parsing for substance/log and substance/seed commands
+### Phase 1: Schedule Model & Parsing
+- [ ] Task 1: Extend `Schedule` enum with `Interval(u64)` variant
+- [ ] Task 2: Implement `FromStr` and `Display` for `Schedule` to parse strings like `"every 4h"`
+- [ ] Task 3: Add unit tests for `Schedule` parsing and formatting
 
-**Checkpoint: Foundation** ������������� ����������� ����������� ���������
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack seed` loads substances successfully, `biohack substance list` shows them
+### Phase 2: StackItem & YAML Integration
+- [ ] Task 4: Ensure `StackItem.schedule` remains `Option<Schedule>` (no change needed)
+- [ ] Task 5: Verify YAML (de)serialization works for the new variant via serde (no extra code needed if using string representation)
+- [ ] Task 6: Add unit tests for round‑trip YAML of a stack with interval schedule
 
-## Phase 2: Core Logging (COMPLETED)
-- [x] Task 6: Implement substance logging command (`biohack log substance`)
-- [x] Task 7: Implement vitals logging command (`biohack log vitals`)
-- [x] Task 8: Implement food logging command (`biohack log food`) - MVP stub
-- [x] Task 9: Create console output formatting for logged entries (timestamp, substance/vitals/food details)
-- [x] Task 10: Implement `biohack log list --days 3` to show recent entries across types
+### Phase 3: Due‑Check Logic
+- [ ] Task 7: Implement `is_due(item: &StackItem, db: &Database) -> bool` that queries the most recent substance log
+- [ ] Task 8: Add unit tests for `is_due` using a mock/subset of the database
+- [ ] Task 9: Add integration tests that verify due behavior with real DB
 
-**Checkpoint: Core Logging** ������������� ����������� ����������� ���������
-- [ ] Tests pass: `cargo test` (no tests yet - see REQ-014)
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: Can log substance, vitals, and food; commands work
+### Phase 4: CLI Command Update
+- [ ] Task 10: Add `--due` flag to the `log stack` subcommand (via clap)
+- [ ] Task 11: Modify `handle_log_stack` to optionally filter by `is_due` when the flag is present
+- [ ] Task 12: Update `handle_stack_list` and `handle_stack_show` to display interval schedules clearly
+- [ ] Task 13: Add CLI integration tests for the `--due` flag (logging due vs. all items)
 
-## Phase 3: Safety Protocols (COMPLETED)
-- [x] Task 11: Implement protocol engine data structures (Protocol, ProtocolCondition, ProtocolAction)
-- [x] Task 12: Encode three built-in protocols: stimulant tachycardia, hypertension urgency, serotonin syndrome risk
-- [x] Task 13: Implement protocol evaluation engine (check conditions against recent logs)
-- [x] Task 14: Create `biohack check` command to run protocols and display alerts/suggestions
-- [x] Task 15: Add protocol testing capability (`biohack protocol test --id stimulant_tachycardia`)
+### Phase 5: Documentation & Polish
+- [ ] Task 14: Update README.md command reference to explain interval schedule syntax and `--due` flag
+- [ ] Task 15: Update `docs/command-reference.md` with details for `log stack --due`
+- [ ] Task 16: Ensure no clippy warnings or formatting issues (`cargo clippy`, `cargo fmt`)
 
-**Checkpoint: Core Features** ��������������� ������������� ������������� �����������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack check` triggers protocols appropriately with test data
+### Phase 6: Verification
+- [ ] Task 17: Run full test suite (`cargo test --all-targets`) to confirm no regressions
+- [ ] Task 18: Manual spot‑check: create a stack with interval, verify `log stack --due` logs items only when appropriate
 
-## Phase 4: View Recent Logs — Substances (v1.0)
-- [x] Task 11: Implement database query for recent substance logs with filtering
-- [x] Task 12: Implement `biohack show substances --days N --name NAME` command with formatted table output
-- [x] Task 13: Add unit tests for substance log queries
+## Checkpoints
 
-**Checkpoint: View Substances** ������������� ����������� ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show substances --days 7` shows formatted table
+### Checkpoint: After Phase 1-2
+- [ ] All unit tests for Schedule and YAML pass
+- [ ] `cargo build` succeeds
+- [ ] Manual check: `biohack stack show` displays interval strings correctly
 
-## Phase 5: View Recent Logs — Vitals (v1.0)
-- [x] Task 14: Implement database query for recent vitals logs
-- [x] Task 15: Implement `biohack show vitals --days N` command with formatted table output
-- [x] Task 16: Add unit tests for vitals log queries
+### Checkpoint: After Phase 3-4
+- [ ] Integration tests for due‑check and `--due` flag pass
+- [ ] `cargo test` passes
+- [ ] Manual spot‑check works as expected
 
-**Checkpoint: View Vitals** ��������������� ������������� ������������� ����������� ������������� ����������� ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show vitals --days 7` shows formatted table
-
-## Phase 6: View Recent Logs — Timeline (v1.0)
-- [x] Task 17: Implement combined timeline query merging substances, vitals, food logs
-- [x] Task 18: Implement `biohack show timeline --days N` command with formatted table output
-- [x] Task 19: Add unit tests for timeline queries
-
-**Checkpoint: View Timeline** ����������������� ��������������� ��������������� ������������� ������������� ������������� ����������� ��������������� ������������� ������������� ����������� ����������� ����������� ���������
-- [x] Tests pass: `cargo test`
-- [x] Build succeeds: `cargo build`
-- [x] Manual check: `biohack show timeline --days 7` shows combined chronological table
-
-## Phase 7: Stack Management (v1.0)
-- [x] Task 20: Implement stack YAML schema and data model
-- [x] Task 21: Create `biohack stack create/list/show` commands
-- [x] Task 22: Implement `biohack log stack <name>` to log multiple substances at once
-- [x] Task 23: Add stack scheduling (morning/evening/prn)
-
-**Checkpoint: Stack Management** ���� ����������� ���������
-
-## Phase 8: Reporting & Export (v1.0)
-- [x] Task 24: Implement markdown report generation
-- [x] Task 25: Implement CSV export
-- [x] Task 26: Add `biohack report --days N --format markdown|csv` command
-- [x] Task 27: Clinician-ready formatting (structured sections)
-
-**Checkpoint: Reporting** �� ������������� ����������� ����������� ���������
-
-## Phase 9: Polish & Documentation (v1.0)
-- [x] Task 28: Create README.md with installation, usage examples, command reference
-- [x] Task 29: Add help text and examples for all commands
-- [x] Task 30: Proper error handling and user-friendly error messages
-- [x] Task 31: Push to GitHub (https://github.com/s-k-y-h-i-g-h/biohack)
-- [x] Task 32: Set up GitHub Actions CI
-
-**Checkpoint: Documentation Complete** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 10: User Documentation (v1.0)
-- [x] Task 33: Create docs/user-guide.md (installation, quick start, workflow)
-- [x] Task 34: Create docs/command-reference.md (all commands with examples)
-- [x] Task 35: Create docs/protocol-authoring.md (YAML schema, built-in protocols, custom protocols)
-- [x] Task 36: Create docs/configuration.md (database path, config file, env vars)
-- [x] Task 37: Create docs/troubleshooting.md (common issues, FAQ)
-- [x] Task 38: Link all docs from README.md
-
-**Checkpoint: User Documentation** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 11: CLI Integration Tests (v1.0)
-- [x] Task 39: Integration tests for `biohack log substance` (valid/invalid doses, routes, timestamps)
-- [x] Task 40: Integration tests for `biohack log vitals` (all vitals combos, validation)
-- [x] Task 41: Integration tests for `biohack log food` (units, amounts, edge cases)
-- [x] Task 42: Integration tests for `biohack substance seed/list/show/search`
-- [x] Task 43: Integration tests for `biohack check` (protocol triggers, no-trigger cases)
-- [x] Task 44: Integration tests for error handling (missing args, invalid inputs, DB errors)
-- [x] Task 45: Add tests to CI pipeline
-- [x] Task 46: Integration tests for `biohack stack create/list/show/log`
-- [x] Task 47: Integration tests for `biohack report` (markdown/csv, file/stdout)
-- [x] Task 48: Integration tests for `biohack protocol test` (valid/invalid IDs)
-
-**Checkpoint: CLI Integration Tests** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 12: Protocol Engine & Testing (v1.0)
-- [x] Task 46: Write unit tests for protocol engine, substance lookups, dose parsing
-- [x] Task 47: Write integration tests for CLI commands
-- [x] Task 48: Set up GitHub Actions CI
-- [x] Task 49: Property-based tests for protocol evaluation
-
-**Checkpoint: Tests & CI** ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅ ✅✅✅✅
-
-## Phase 13: v1.1 Features (Planned)
-- [x] Task 50a: Food database integration (USDA FoodData Central) — **search client & `biohack show food-search` implemented**
-- [x] Task 50b: Nutrient display on `biohack log food` (scale USDA data to user amount/unit)
-- [x] Task 50c: Daily nutrient totals & reporting integration
-- [x] Task 50d: OpenFoodFacts integration — search client & barcode lookup for UK branded foods
-- [x] Task 50e: Multi-source food lookup — OpenFoodFacts primary (UK), USDA fallback (generic)
-- [x] Task 50f: Nutrient completeness tracking — shows macros vs micros coverage per source
-- [x] Task 51a: Nutrient RDI/DRI reference data (embedded in src/nutrient_ref.rs — 50+ nutrients with RDI, UL, USDA IDs)
-- [x] Task 51b: Daily nutrient status calculation (intake vs RDI with %) — implemented in db.rs::get_daily_nutrient_status()
-- [x] Task 51c: `biohack nutrient status --days N` CLI command with deficiency/excess highlighting — implemented in commands.rs
-- [x] Task 51d: Nutrient deficiency/excess summary in `biohack report` — markdown section added to generate_markdown_report()
-- [x] Task 52: Protocol YAML versioning and migration system — implemented with database storage, migration logic, CLI commands
-
-## Phase 14: Substance Database Expansion (v1.1)
-- [x] Task 56: Add Memantine, Taurine, Glycine to substance seed database (N-Acetyl-Cysteine and Creatine already present)
-
-**Checkpoint: v1.1 Complete** ������������������� ����������������� ����������������� ���������������
-
-## Task Sizing Guidelines
-
-| Task | Size | Files Touched | Est. Effort |
-|------|------|---------------|-------------|
-| Task 11: View substances DB query | S | db.rs, commands.rs | 1-2 hrs |
-| Task 12: `biohack show substances` command | S | commands.rs, main.rs | 1-2 hrs |
-| Task 14: View vitals DB query | S | db.rs, commands.rs | 1-2 hrs |
-| Task 17: Timeline query | M | db.rs, commands.rs | 2-4 hrs |
-| Task 46: Unit tests | M | tests/*.rs | 2-4 hrs |
+### Checkpoint: After Phase 5-6
+- [ ] All tests pass, clippy clean, fmt clean
+- [ ] Documentation updated and builds without errors
+- [ ] Ready for review
 
 ## Risks and Mitigations
-
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Database corruption or performance issues | High | Use proven sled database; add basic error handling and recovery |
-| Protocol engine too complex or buggy | High | Start with simple protocols; add comprehensive tests; keep rule syntax simple |
-| CLI discovery poor for users | Medium | Use clear command names, good help text, and consistent UX patterns |
-| Substance dose parsing edge cases | Medium | Comprehensive test coverage for various dose formats (mg, g, ml, decimals) |
-| Food logging integration later | Low | Design FoodLog model to be extensible; keep substance/vitals patterns similar |
+| Parsing edge cases in schedule strings (e.g., missing "every", wrong unit) | Medium | Return clear error messages; reject invalid strings in `FromStr` |
+| Query performance for `is_due` on large substance log tables | Low | Add index on `substance_name` and `timestamp` if needed; currently dataset small |
+| Backward compatibility: existing stacks without interval schedule still work | Low | `schedule` remains `Option<Schedule>`; `None` treated as unscheduled |
+| Misinterpretation of "due" when substance logged via other means | Low | Document that dues are based on any recent log of the substance (any route) |
 
 ## Open Questions
-
-- [ ] What is the optimal balance between substance database completeness and seed size? Should we include rare/nootropic substances only if personally relevant?
-    A: Database completeness is preferred.
-
-- [ ] How should versioning work for protocol YAML files to allow safe updates without breaking existing user data?
-    A: I guess we need to write something which migrates data files between versions?
-
-- [ ] Should the CLI support batch importing of existing CSV/JSON logs from other tools (e.g., Dayone, Notion) for onboarding?
-    A: I don't know. Maybe importing from applications like Google Health and Samsung Health would be useful.
-
-- [ ] What are the most useful visualization(s) for the eventual TUI/web frontend (e.g., time-series of HR vs substance intake)?
-    A: I don't know.
-
-- [ ] How can we make the protocol engine accessible to non-programmers for authoring new safety rules (e.g., GUI wizard, web form)?
-    A: I guess we could include ways of doing this in each of the frontends?
+- Should interval support sub‑hour granularity (e.g., minutes)? For simplicity, start with hours only; can extend later.
+- Should we store a explicit `stack_id` in log entries to improve due‑check accuracy? Defer to future work; current approach uses substance name only.
 
 ## See Also
-- Refined idea: docs/ideas/BiohackerSafetyFirstTrackingCLI.md
-- Substance seed: data/seeds/substances.yaml
+- Existing stack management (REQ-007)
+- Protocol engine (REQ-005)
+- Definition of Done: `../../references/definition-of-done.md`
