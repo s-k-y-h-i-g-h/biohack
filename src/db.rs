@@ -583,12 +583,15 @@ impl Database {
         let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
 
         // Aggregate nutrients by name
-        let mut nutrient_map: std::collections::HashMap<String, (f64, String)> = std::collections::HashMap::new();
+        let mut nutrient_map: std::collections::HashMap<String, (f64, String)> =
+            std::collections::HashMap::new();
 
         for log in food_logs {
             if let Some(nutrients) = log.nutrients {
                 for nutrient in nutrients {
-                    let entry = nutrient_map.entry(nutrient.name.clone()).or_insert((0.0, nutrient.unit.clone()));
+                    let entry = nutrient_map
+                        .entry(nutrient.name.clone())
+                        .or_insert((0.0, nutrient.unit.clone()));
                     entry.0 += nutrient.amount;
                 }
             }
@@ -610,7 +613,8 @@ impl Database {
         let food_logs = self.get_recent_food_logs_with_nutrients(days)?;
 
         // Group by date
-        let mut daily_map: std::collections::HashMap<chrono::NaiveDate, Vec<NutrientInfo>> = std::collections::HashMap::new();
+        let mut daily_map: std::collections::HashMap<chrono::NaiveDate, Vec<NutrientInfo>> =
+            std::collections::HashMap::new();
 
         for log in food_logs {
             let date = log.timestamp.date_naive();
@@ -624,16 +628,22 @@ impl Database {
         let mut aggregates: Vec<DailyNutrientAggregate> = daily_map
             .into_iter()
             .map(|(date, nutrients)| {
-                let mut nutrient_map: std::collections::HashMap<String, (f64, String)> = std::collections::HashMap::new();
+                let mut nutrient_map: std::collections::HashMap<String, (f64, String)> =
+                    std::collections::HashMap::new();
                 for nutrient in nutrients {
-                    let entry = nutrient_map.entry(nutrient.name).or_insert((0.0, nutrient.unit));
+                    let entry = nutrient_map
+                        .entry(nutrient.name)
+                        .or_insert((0.0, nutrient.unit));
                     entry.0 += nutrient.amount;
                 }
                 let totals: Vec<NutrientInfo> = nutrient_map
                     .into_iter()
                     .map(|(name, (amount, unit))| NutrientInfo { name, amount, unit })
                     .collect();
-                DailyNutrientAggregate { date, nutrients: totals }
+                DailyNutrientAggregate {
+                    date,
+                    nutrients: totals,
+                }
             })
             .collect();
 
@@ -645,7 +655,9 @@ impl Database {
 
     /// Get nutrient status (intake vs RDI) for a time range
     pub fn get_nutrient_status(&self, days: u32) -> Result<Vec<NutrientStatus>> {
-        use crate::nutrient_ref::{calculate_nutrient_status, get_nutrient_references, NutrientStatusLevel};
+        use crate::nutrient_ref::{
+            NutrientStatusLevel, calculate_nutrient_status, get_nutrient_references,
+        };
 
         let totals = self.get_nutrient_totals(days)?;
         let refs = get_nutrient_references();
@@ -674,7 +686,9 @@ impl Database {
 
     /// Get daily nutrient status for each day in range
     pub fn get_daily_nutrient_status(&self, days: u32) -> Result<Vec<DailyNutrientStatus>> {
-        use crate::nutrient_ref::{calculate_nutrient_status, get_nutrient_references, NutrientStatusLevel};
+        use crate::nutrient_ref::{
+            NutrientStatusLevel, calculate_nutrient_status, get_nutrient_references,
+        };
 
         let daily_aggregates = self.get_daily_nutrient_aggregates(days)?;
         let refs = get_nutrient_references();
@@ -780,7 +794,8 @@ impl Database {
         if current_version < (1, 2, 0) {
             for action in &mut protocol.actions {
                 if action.rationale.is_none() {
-                    action.rationale = Some("(migrated from v1.1 - rationale field added)".to_string());
+                    action.rationale =
+                        Some("(migrated from v1.1 - rationale field added)".to_string());
                 }
             }
             current_version = (1, 2, 0);
@@ -796,7 +811,10 @@ impl Database {
 
         // Update version if migrated
         if current_version != (major, minor, patch) {
-            protocol.version = format!("{}.{}.{}", current_version.0, current_version.1, current_version.2);
+            protocol.version = format!(
+                "{}.{}.{}",
+                current_version.0, current_version.1, current_version.2
+            );
         }
 
         Ok(())

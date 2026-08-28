@@ -1,14 +1,14 @@
-use anyhow::Result;
-use chrono::{DateTime, Duration, Local, Utc, Timelike};
-use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use crate::nutrient_ref::{NutrientStatusLevel, status_label};
+use anyhow::Result;
+use chrono::{DateTime, Duration, Local, Timelike, Utc};
+use comfy_table::{Cell, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use owo_colors::OwoColorize;
 use std::io::Write;
 use uuid::Uuid;
 
 use crate::cli::*;
 use crate::db::Database;
-use crate::models::{FoodLog, Stack, StackItem, Substance, SubstanceLog, VitalsLog, Schedule};
+use crate::models::{FoodLog, Schedule, Stack, StackItem, Substance, SubstanceLog, VitalsLog};
 use crate::protocols::{ProtocolContext, ProtocolEngine};
 
 /// Initialize the database
@@ -198,7 +198,11 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
             if let Ok(foods) = rt.block_on(client.search_foods(&args.name)) {
                 if let Some(best_match) = foods.first() {
                     // Get nutrient info for this amount
-                    if let Ok(nutrient_infos) = rt.block_on(client.get_nutrients_for_amount(&best_match.id, args.amount, &args.unit)) {
+                    if let Ok(nutrient_infos) = rt.block_on(client.get_nutrients_for_amount(
+                        &best_match.id,
+                        args.amount,
+                        &args.unit,
+                    )) {
                         // Convert to our NutrientInfo model
                         let nutrients: Vec<crate::models::NutrientInfo> = nutrient_infos
                             .into_iter()
@@ -209,7 +213,11 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
                             })
                             .collect();
 
-                        (Some(best_match.id.clone()), Some(nutrients), Some(best_match.source))
+                        (
+                            Some(best_match.id.clone()),
+                            Some(nutrients),
+                            Some(best_match.source),
+                        )
                     } else {
                         (Some(best_match.id.clone()), None, Some(best_match.source))
                     }
@@ -283,7 +291,9 @@ pub fn handle_log_food(db: &Database, args: &LogCommands, _no_color: bool) -> Re
         } else if food_id.is_some() {
             println!("  (Match found but nutrient data unavailable)");
         } else {
-            println!("  (No match found in OpenFoodFacts or USDA — set USDA_API_KEY for broader generic ingredient coverage)");
+            println!(
+                "  (No match found in OpenFoodFacts or USDA — set USDA_API_KEY for broader generic ingredient coverage)"
+            );
         }
 
         if let Some(n) = &args.notes {
@@ -580,7 +590,10 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
     let foods = rt.block_on(client.search_foods(&args.query))?;
 
     if foods.is_empty() {
-        println!("{}", format!("No foods found matching '{}'", args.query).yellow());
+        println!(
+            "{}",
+            format!("No foods found matching '{}'", args.query).yellow()
+        );
         return Ok(());
     }
 
@@ -589,12 +602,26 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
     table
         .load_preset(UTF8_FULL)
         .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec!["ID", "Description", "Brand", "Category", "Source", "Nutrients", "Completeness"]);
+        .set_header(vec![
+            "ID",
+            "Description",
+            "Brand",
+            "Category",
+            "Source",
+            "Nutrients",
+            "Completeness",
+        ]);
 
     for food in foods.iter().take(args.limit) {
         let has_nutrients = food.nutrients_per_100g.is_some();
-        let nutrient_count = food.nutrients_per_100g.as_ref().map(|n| n.len()).unwrap_or(0);
-        let completeness = food.nutrient_completeness.as_ref()
+        let nutrient_count = food
+            .nutrients_per_100g
+            .as_ref()
+            .map(|n| n.len())
+            .unwrap_or(0);
+        let completeness = food
+            .nutrient_completeness
+            .as_ref()
             .map(|c| c.summary())
             .unwrap_or_else(|| "unknown".to_string());
         table.add_row(vec![
@@ -610,8 +637,12 @@ pub fn handle_food_search(_db: &Database, args: &FoodSearchArgs, _no_color: bool
 
     println!("{}", table);
     println!();
-    println!("Use `biohack log food --name \"<description>\" --amount <n> --unit <unit>` to log a food.");
-    println!("For nutrient details, the tool will search OpenFoodFacts first (UK branded), then USDA (generic).");
+    println!(
+        "Use `biohack log food --name \"<description>\" --amount <n> --unit <unit>` to log a food."
+    );
+    println!(
+        "For nutrient details, the tool will search OpenFoodFacts first (UK branded), then USDA (generic)."
+    );
     println!();
     println!("Completeness: [macros only] = energy/protein/fat/carbs/fiber/sugars/sodium only");
     println!("              [micros ✓] = includes potassium/magnesium/calcium/vitamins/etc.");
@@ -628,7 +659,10 @@ pub fn handle_substance_search(
         let results = db.search_substances(&args.query)?;
 
         if results.is_empty() {
-            println!("{}", format!("No substances found matching '{}'", args.query).yellow());
+            println!(
+                "{}",
+                format!("No substances found matching '{}'", args.query).yellow()
+            );
             return Ok(());
         }
 
@@ -636,7 +670,13 @@ pub fn handle_substance_search(
         table
             .load_preset(UTF8_FULL)
             .apply_modifier(UTF8_ROUND_CORNERS)
-            .set_header(vec!["Name", "Category", "Typical Dose", "Half-life", "Contraindications"]);
+            .set_header(vec![
+                "Name",
+                "Category",
+                "Typical Dose",
+                "Half-life",
+                "Contraindications",
+            ]);
 
         for substance in results {
             let typical_dose = substance
@@ -681,10 +721,7 @@ pub fn handle_substance_show(
                     "{}",
                     format!("═══════════════════════════════════════").bold()
                 );
-                println!(
-                    "{}",
-                    format!("  Substance: {}", s.name).bold().green()
-                );
+                println!("{}", format!("  Substance: {}", s.name).bold().green());
                 println!(
                     "{}",
                     format!("═══════════════════════════════════════").bold()
@@ -1010,7 +1047,10 @@ pub fn handle_check(db: &Database, _no_color: bool) -> Result<()> {
                     "constraint" => "[CONSTRAINT]",
                     _ => "[ACTION]",
                 };
-                println!("  {} {} (priority {})", prefix, action.message, action.priority);
+                println!(
+                    "  {} {} (priority {})",
+                    prefix, action.message, action.priority
+                );
                 if let Some(rationale) = &action.rationale {
                     println!("    Rationale: {}", rationale);
                 }
@@ -1208,10 +1248,7 @@ pub fn handle_protocol_migrate(
             db.migrate_protocol(&mut proto)?;
 
             if proto.version != old_version {
-                println!(
-                    "  {} v{} -> v{}",
-                    proto.id, old_version, proto.version
-                );
+                println!("  {} v{} -> v{}", proto.id, old_version, proto.version);
                 if !args.dry_run {
                     db.upsert_protocol(&proto)?;
                     migrated += 1;
@@ -1224,19 +1261,12 @@ pub fn handle_protocol_migrate(
                 "{}",
                 format!(
                     "\n{} protocol(s) migrated",
-                    if args.dry_run {
-                        "would be"
-                    } else {
-                        "were"
-                    }
+                    if args.dry_run { "would be" } else { "were" }
                 )
                 .green()
             );
         } else {
-            println!(
-                "{}",
-                "All protocols already at current version".yellow()
-            );
+            println!("{}", "All protocols already at current version".yellow());
         }
     }
 
@@ -1441,43 +1471,66 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
     let nutrient_status = db.get_nutrient_status(days).ok();
     if let Some(statuses) = nutrient_status {
         if !statuses.is_empty() {
-            let deficient: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Deficient).collect();
-            let low: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Low).collect();
-            let excessive: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Excessive).collect();
-            let very_high: Vec<_> = statuses.iter().filter(|s| s.status == NutrientStatusLevel::VeryHigh).collect();
-            
-            if !deficient.is_empty() || !low.is_empty() || !excessive.is_empty() || !very_high.is_empty() {
+            let deficient: Vec<_> = statuses
+                .iter()
+                .filter(|s| s.status == NutrientStatusLevel::Deficient)
+                .collect();
+            let low: Vec<_> = statuses
+                .iter()
+                .filter(|s| s.status == NutrientStatusLevel::Low)
+                .collect();
+            let excessive: Vec<_> = statuses
+                .iter()
+                .filter(|s| s.status == NutrientStatusLevel::Excessive)
+                .collect();
+            let very_high: Vec<_> = statuses
+                .iter()
+                .filter(|s| s.status == NutrientStatusLevel::VeryHigh)
+                .collect();
+
+            if !deficient.is_empty()
+                || !low.is_empty()
+                || !excessive.is_empty()
+                || !very_high.is_empty()
+            {
                 report.push_str("## Nutrient Status Summary (Deficiency / Excess Analysis)\n\n");
-                
+
                 if !deficient.is_empty() {
                     report.push_str("### ⚠ Deficient (< 50% RDI)\n\n");
                     for s in &deficient {
-                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
-                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                        report.push_str(&format!(
+                            "- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n",
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit
+                        ));
                     }
                     report.push('\n');
                 }
-                
+
                 if !low.is_empty() {
                     report.push_str("### ⚠ Low (50–99% RDI)\n\n");
                     for s in &low {
-                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
-                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                        report.push_str(&format!(
+                            "- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n",
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit
+                        ));
                     }
                     report.push('\n');
                 }
-                
+
                 if !very_high.is_empty() {
                     report.push_str("### ⚠ Very High (150–200% RDI)\n\n");
                     for s in &very_high {
-                        report.push_str(&format!("- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n", 
-                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit));
+                        report.push_str(&format!(
+                            "- **{}**: {:.0}% of RDI ({:.1} {} / {:.1} {})\n",
+                            s.name, s.percent_rdi, s.intake, s.unit, s.rdi, s.unit
+                        ));
                     }
                     report.push('\n');
                 }
-                
+
                 if !excessive.is_empty() {
-                    report.push_str("### 🚨 Excessive (Above Tolerable Upper Intake Level - UL)\n\n");
+                    report
+                        .push_str("### 🚨 Excessive (Above Tolerable Upper Intake Level - UL)\n\n");
                     for s in &excessive {
                         let ul = s.ul.unwrap_or(0.0);
                         report.push_str(&format!("- **{}**: {:.0}% of UL ({:.1} {} / UL {:.1} {}) — **Potential toxicity risk**\n", 
@@ -1485,12 +1538,21 @@ fn generate_markdown_report(db: &Database, days: u32, _format: &str) -> Result<S
                     }
                     report.push('\n');
                 }
-                
+
                 // Summary counts
-                let adequate = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Adequate).count();
-                let high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::High).count();
-                let no_rdi = statuses.iter().filter(|s| s.status == NutrientStatusLevel::NoRDI).count();
-                
+                let adequate = statuses
+                    .iter()
+                    .filter(|s| s.status == NutrientStatusLevel::Adequate)
+                    .count();
+                let high = statuses
+                    .iter()
+                    .filter(|s| s.status == NutrientStatusLevel::High)
+                    .count();
+                let no_rdi = statuses
+                    .iter()
+                    .filter(|s| s.status == NutrientStatusLevel::NoRDI)
+                    .count();
+
                 report.push_str(&format!(
                     "\n**Overall:** {} Deficient, {} Low, {} Adequate, {} High, {} Very High, {} Excessive, {} No RDI\n\n",
                     deficient.len(), low.len(), adequate, high, very_high.len(), excessive.len(), no_rdi
@@ -1700,36 +1762,86 @@ pub fn handle_report(db: &Database, args: &ReportArgs, _no_color: bool) -> Resul
 }
 
 /// Nutrient status command handler
-pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, _no_color: bool) -> Result<()> {
+pub fn handle_nutrient_status(
+    db: &Database,
+    args: &NutrientStatusArgs,
+    _no_color: bool,
+) -> Result<()> {
     let statuses = db.get_nutrient_status(args.days)?;
 
     if statuses.is_empty() {
-        println!("{}", "No nutrient data available for the specified period.".yellow());
+        println!(
+            "{}",
+            "No nutrient data available for the specified period.".yellow()
+        );
         return Ok(());
     }
 
     // Print summary counts
-    let deficient = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Deficient).count();
-    let low = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Low).count();
-    let adequate = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Adequate).count();
-    let high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::High).count();
-    let very_high = statuses.iter().filter(|s| s.status == NutrientStatusLevel::VeryHigh).count();
-    let excessive = statuses.iter().filter(|s| s.status == NutrientStatusLevel::Excessive).count();
-    let no_rdi = statuses.iter().filter(|s| s.status == NutrientStatusLevel::NoRDI).count();
+    let deficient = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::Deficient)
+        .count();
+    let low = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::Low)
+        .count();
+    let adequate = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::Adequate)
+        .count();
+    let high = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::High)
+        .count();
+    let very_high = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::VeryHigh)
+        .count();
+    let excessive = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::Excessive)
+        .count();
+    let no_rdi = statuses
+        .iter()
+        .filter(|s| s.status == NutrientStatusLevel::NoRDI)
+        .count();
 
     println!();
-    println!("{}", format!("Nutrient Status (last {} days)", args.days).bold().underline());
+    println!(
+        "{}",
+        format!("Nutrient Status (last {} days)", args.days)
+            .bold()
+            .underline()
+    );
     println!();
 
     // Summary
     println!("{}", "Summary:".bold());
-    if deficient > 0 { println!("  {} Deficient", format!("[{}]", deficient).red()); }
-    if low > 0 { println!("  {} Low", format!("[{}]", low).yellow()); }
-    if adequate > 0 { println!("  {} Adequate", format!("[{}]", adequate).green()); }
-    if high > 0 { println!("  {} High", format!("[{}]", high).yellow()); }
-    if very_high > 0 { println!("  {} Very High", format!("[{}]", very_high).magenta()); }
-    if excessive > 0 { println!("  {} Excessive (above UL)", format!("[{}]", excessive).red()); }
-    if no_rdi > 0 { println!("  {} No RDI established", format!("[{}]", no_rdi).dimmed()); }
+    if deficient > 0 {
+        println!("  {} Deficient", format!("[{}]", deficient).red());
+    }
+    if low > 0 {
+        println!("  {} Low", format!("[{}]", low).yellow());
+    }
+    if adequate > 0 {
+        println!("  {} Adequate", format!("[{}]", adequate).green());
+    }
+    if high > 0 {
+        println!("  {} High", format!("[{}]", high).yellow());
+    }
+    if very_high > 0 {
+        println!("  {} Very High", format!("[{}]", very_high).magenta());
+    }
+    if excessive > 0 {
+        println!(
+            "  {} Excessive (above UL)",
+            format!("[{}]", excessive).red()
+        );
+    }
+    if no_rdi > 0 {
+        println!("  {} No RDI established", format!("[{}]", no_rdi).dimmed());
+    }
     println!();
 
     // Detailed table
@@ -1737,12 +1849,20 @@ pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, _no_colo
     table
         .load_preset(UTF8_FULL)
         .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec!["Nutrient", "Intake", "RDI", "Unit", "% RDI", "UL", "% UL", "Status"]);
+        .set_header(vec![
+            "Nutrient", "Intake", "RDI", "Unit", "% RDI", "UL", "% UL", "Status",
+        ]);
 
     for status in &statuses {
         let status_str = status_label(status.status);
-        let ul_str = status.ul.map(|v| format!("{:.1}", v)).unwrap_or_else(|| "—".to_string());
-        let ul_pct_str = status.percent_ul.map(|v| format!("{:.0}%", v)).unwrap_or_else(|| "—".to_string());
+        let ul_str = status
+            .ul
+            .map(|v| format!("{:.1}", v))
+            .unwrap_or_else(|| "—".to_string());
+        let ul_pct_str = status
+            .percent_ul
+            .map(|v| format!("{:.0}%", v))
+            .unwrap_or_else(|| "—".to_string());
 
         let status_colored = match status.status {
             NutrientStatusLevel::Deficient => status_str.red().to_string(),
@@ -1772,21 +1892,30 @@ pub fn handle_nutrient_status(db: &Database, args: &NutrientStatusArgs, _no_colo
     if deficient > 0 || low > 0 || excessive > 0 {
         println!();
         println!("{}", "Recommendations:".bold().underline());
-        
+
         for status in &statuses {
             match status.status {
                 NutrientStatusLevel::Deficient => {
-                    println!("  • {}: Consider increasing intake (currently {:.0}% of RDI)", 
-                        status.name, status.percent_rdi);
+                    println!(
+                        "  • {}: Consider increasing intake (currently {:.0}% of RDI)",
+                        status.name, status.percent_rdi
+                    );
                 }
                 NutrientStatusLevel::Low => {
-                    println!("  • {}: Monitor intake (currently {:.0}% of RDI)", 
-                        status.name, status.percent_rdi);
+                    println!(
+                        "  • {}: Monitor intake (currently {:.0}% of RDI)",
+                        status.name, status.percent_rdi
+                    );
                 }
                 NutrientStatusLevel::Excessive => {
                     if let Some(ul) = status.ul {
-                        println!("  • {}: Reduce intake — currently {:.0}% of UL ({:.1} {})", 
-                            status.name, status.percent_ul.unwrap_or(0.0), ul, status.unit);
+                        println!(
+                            "  • {}: Reduce intake — currently {:.0}% of UL ({:.1} {})",
+                            status.name,
+                            status.percent_ul.unwrap_or(0.0),
+                            ul,
+                            status.unit
+                        );
                     }
                 }
                 _ => {}

@@ -76,19 +76,31 @@ pub struct DailyNutrientStatus {
 
 impl DailyNutrientStatus {
     pub fn deficient_count(&self) -> usize {
-        self.nutrients.iter().filter(|n| n.status == NutrientStatusLevel::Deficient).count()
+        self.nutrients
+            .iter()
+            .filter(|n| n.status == NutrientStatusLevel::Deficient)
+            .count()
     }
 
     pub fn low_count(&self) -> usize {
-        self.nutrients.iter().filter(|n| n.status == NutrientStatusLevel::Low).count()
+        self.nutrients
+            .iter()
+            .filter(|n| n.status == NutrientStatusLevel::Low)
+            .count()
     }
 
     pub fn excessive_count(&self) -> usize {
-        self.nutrients.iter().filter(|n| n.status == NutrientStatusLevel::Excessive).count()
+        self.nutrients
+            .iter()
+            .filter(|n| n.status == NutrientStatusLevel::Excessive)
+            .count()
     }
 
     pub fn very_high_count(&self) -> usize {
-        self.nutrients.iter().filter(|n| n.status == NutrientStatusLevel::VeryHigh).count()
+        self.nutrients
+            .iter()
+            .filter(|n| n.status == NutrientStatusLevel::VeryHigh)
+            .count()
     }
 }
 
@@ -222,7 +234,6 @@ pub fn get_nutrient_references() -> Vec<NutrientReference> {
             essential: false,
             category: NutrientCategory::Macro,
         },
-
         // VITAMINS
         NutrientReference {
             name: "Vitamin A (RAE)",
@@ -323,7 +334,6 @@ pub fn get_nutrient_references() -> Vec<NutrientReference> {
             essential: true,
             category: NutrientCategory::Vitamin,
         },
-
         // MINERALS
         NutrientReference {
             name: "Calcium",

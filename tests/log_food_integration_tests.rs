@@ -195,9 +195,18 @@ mod log_food_integration_tests {
         let log = &logs[0];
 
         // Should NOT have food_db_id or source since no match was found
-        assert!(log.food_db_id.is_none(), "food_db_id should be None when no match found");
-        assert!(log.source.is_none(), "source should be None when no match found");
-        assert!(log.nutrients.is_none(), "nutrients should be None when no match found");
+        assert!(
+            log.food_db_id.is_none(),
+            "food_db_id should be None when no match found"
+        );
+        assert!(
+            log.source.is_none(),
+            "source should be None when no match found"
+        );
+        assert!(
+            log.nutrients.is_none(),
+            "nutrients should be None when no match found"
+        );
     }
 
     #[test]
@@ -227,7 +236,7 @@ mod log_food_integration_tests {
     // Note: The following tests depend on external API (OpenFoodFacts/USDA) availability.
     // They test the code paths but don't assert on external API results since those
     // can vary based on rate limiting, network, and API changes.
-    
+
     #[test]
     fn test_log_food_code_path_for_food_database_lookup() {
         // This test verifies the code path for food database lookup executes without error
@@ -252,7 +261,7 @@ mod log_food_integration_tests {
         assert_eq!(logs.len(), 1);
         let log = &logs[0];
         assert_eq!(log.food_name, "banana");
-        
+
         // food_db_id, source, and nutrients are populated IF the API returns a match
         // We don't assert on them since external API availability varies
     }

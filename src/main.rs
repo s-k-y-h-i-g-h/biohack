@@ -1,12 +1,15 @@
 #!/usr/bin/env rust
 //! biohack - Biohacker's safety-first tracking CLI
 
+use anyhow::Result;
 use biohack::{
-    cli::{Cli, Commands, LogCommands, NutrientCommands, ProtocolCommands, RemoveCommands, ShowCommands, StackCommands, SubstanceCommands},
+    cli::{
+        Cli, Commands, LogCommands, NutrientCommands, ProtocolCommands, RemoveCommands,
+        ShowCommands, StackCommands, SubstanceCommands,
+    },
     commands,
     db::Database,
 };
-use anyhow::Result;
 use clap::Parser;
 use owo_colors::OwoColorize;
 use uuid::Uuid;
@@ -72,9 +75,7 @@ fn main() -> Result<()> {
             ProtocolCommands::Show { .. } => {
                 println!("{}", "Not yet implemented".yellow());
             }
-            ProtocolCommands::Seed => {
-                commands::handle_protocol_seed(&db, &cmd, cli.no_color)?
-            }
+            ProtocolCommands::Seed => commands::handle_protocol_seed(&db, &cmd, cli.no_color)?,
             ProtocolCommands::Migrate(args) => {
                 commands::handle_protocol_migrate(&db, &args, cli.no_color)?
             }
@@ -83,7 +84,9 @@ fn main() -> Result<()> {
         Commands::Report(args) => commands::handle_report(&db, &args, cli.no_color)?,
 
         Commands::Nutrient(cmd) => match cmd {
-            NutrientCommands::Status(args) => commands::handle_nutrient_status(&db, &args, cli.no_color)?,
+            NutrientCommands::Status(args) => {
+                commands::handle_nutrient_status(&db, &args, cli.no_color)?
+            }
         },
 
         Commands::Check => commands::handle_check(&db, cli.no_color)?,

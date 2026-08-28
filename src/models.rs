@@ -119,13 +119,10 @@ pub struct VitalsLog {
     pub notes: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Schedule {
-    #[serde(rename = "morning")]
     Morning,
-    #[serde(rename = "evening")]
     Evening,
-    #[serde(rename = "prn")]
     Prn,
     Interval(u64),
 }
@@ -164,6 +161,25 @@ impl std::str::FromStr for Schedule {
                 s
             ))
         }
+    }
+}
+
+impl serde::Serialize for Schedule {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Schedule {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
     }
 }
 
