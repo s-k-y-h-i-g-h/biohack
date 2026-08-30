@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "biohack — CLI Architecture",
+    "output": "biohack-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "request-flow", "label": "Primary request flow", "focus": ["cli", "main", "commands", "db", "sled"], "note": "User command flows from clap parsing through dispatch to storage." },
+      { "id": "protocol-safety", "label": "Protocol safety path", "focus": ["commands", "protocols", "nutrient-ref"], "note": "Deterministic safety evaluation and nutrient calculations." },
+      { "id": "food-lookup", "label": "Food lookup flow", "focus": ["commands", "food-db", "openfoodfacts", "usda"], "note": "Multi-source food database lookup with fallback." }
+    ]
+  },
+  "components": [
+    { "id": "cli", "type": "frontend", "label": "cli.rs", "sublabel": "clap 4 CLI", "pos": [40, 240], "size": [140, 60] },
+    { "id": "main", "type": "backend", "label": "main.rs", "sublabel": "Entry & dispatch", "pos": [240, 240], "size": [140, 60] },
+    { "id": "commands", "type": "backend", "label": "commands.rs", "sublabel": "All handlers", "pos": [440, 240], "size": [140, 60] },
+    { "id": "models", "type": "database", "label": "models.rs", "sublabel": "Core types", "pos": [440, 60], "size": [140, 60] },
+    { "id": "db", "type": "database", "label": "db.rs", "sublabel": "Sled CRUD", "pos": [640, 240], "size": [140, 60] },
+    { "id": "sled", "type": "database", "label": "sled", "sublabel": "~/.local/share/biohack", "pos": [840, 240], "size": [140, 60] },
+    { "id": "protocols", "type": "backend", "label": "protocols.rs", "sublabel": "Safety engine", "pos": [640, 360], "size": [140, 60] },
+    { "id": "nutrient-ref", "type": "database", "label": "nutrient_ref.rs", "sublabel": "RDI/UL + status", "pos": [640, 60], "size": [140, 60] },
+    { "id": "food-db", "type": "external", "label": "food_db.rs", "sublabel": "OpenFoodFacts + USDA", "pos": [440, 420], "size": [140, 60], "tag": "HTTP" },
+    { "id": "openfoodfacts", "type": "external", "label": "OpenFoodFacts", "sublabel": "UK branded", "pos": [780, 440], "size": [140, 60] },
+    { "id": "usda", "type": "external", "label": "USDA API", "sublabel": "Generic fallback", "pos": [980, 420], "size": [140, 60] },
+    { "id": "lib", "type": "backend", "label": "lib.rs", "sublabel": "Test re-exports", "pos": [240, 60], "size": [140, 60] },
+    { "id": "tests", "type": "external", "label": "tests/*.rs", "sublabel": "E2E integration", "pos": [40, 60], "size": [140, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "biohack crate", "wraps": ["cli", "main", "commands", "models", "lib", "tests", "db", "protocols", "nutrient-ref", "food-db"] }
+  ],
+  "connections": [
+    { "id": "cli-to-main", "from": "cli", "to": "main", "label": "Args", "variant": "emphasis" },
+    { "id": "main-to-commands", "from": "main", "to": "commands", "label": "Dispatch", "labelAt": [340, 310] },
+    { "id": "commands-to-models", "from": "commands", "to": "models", "label": "Uses types" },
+    { "id": "commands-to-db", "from": "commands", "to": "db", "label": "CRUD", "labelAt": [540, 310] },
+    { "id": "commands-to-protocols", "from": "commands", "to": "protocols", "label": "Safety check" },
+    { "id": "commands-to-nutrient-ref", "from": "commands", "to": "nutrient-ref", "label": "RDI calc" },
+    { "id": "commands-to-food-db", "from": "commands", "to": "food-db", "label": "Food lookup", "variant": "dashed", "labelAt": [440, 310] },
+    { "id": "db-to-sled", "from": "db", "to": "sled", "label": "KV ops" },
+    { "id": "food-db-to-off", "from": "food-db", "to": "openfoodfacts", "label": "Primary", "variant": "emphasis" },
+    { "id": "food-db-to-usda", "from": "food-db", "to": "usda", "label": "Fallback", "variant": "dashed", "via": [[580, 520], [980, 520]] },
+    { "id": "lib-reexports", "from": "lib", "to": "commands" },
+    { "id": "tests-drive-cli", "from": "tests", "to": "cli", "label": "E2E", "variant": "dashed", "labelAt": [90, 135] }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "CLI Layer", "items": ["clap 4 subcommands", "--due flag for stacks", "Global --db-path / BIOHACK_DB"] },
+    { "dot": "emerald", "title": "Core Logic", "items": ["commands.rs: all handlers", "models.rs: Schedule serde string round-trip", "db.rs: sled wrapper + queries"] },
+    { "dot": "rose", "title": "Safety", "items": ["protocols.rs: deterministic engine", "No LLM on safety path", "Stimulant + tachycardia check"] },
+    { "dot": "amber", "title": "Food Data", "items": ["OpenFoodFacts primary (UK)", "USDA fallback (generic)", "Completeness tracking"] }
+  ]
+}
